@@ -53,7 +53,9 @@ function useData(kind, id) {
     ] : [];
     const calls = id === 'new' ? [Promise.resolve(null), ...references] : [load];
     Promise.all(calls)
-      .then(([data, channels, templates]) => setResult({ key, data, channels, templates }))
+      .then(([data, channels, templates]) => {
+        if (!controller.signal.aborted) setResult({ key, data, channels, templates });
+      })
       .catch(error => {
         if (!controller.signal.aborted) setResult({ key, error: error.message });
       });

@@ -1,4 +1,4 @@
-:root{font-family:Inter,system-ui,sans-serif;color:#172b25;background:#f6f8f5;line-height:1.5;--ink:#172b25;--muted:#4e665e;--line:#d8e2db;--green:#1b5946;--milk:#f6f8f5}
+:root{font-family:system-ui,sans-serif;color:#172b25;background:#f6f8f5;line-height:1.5;--ink:#172b25;--muted:#4e665e;--line:#d8e2db;--green:#1b5946;--milk:#f6f8f5}
 *{box-sizing:border-box}
 body{margin:0;min-width:300px}
 ::selection{background:#c9e7d8;color:var(--ink)}

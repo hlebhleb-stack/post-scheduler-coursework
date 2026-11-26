@@ -1,0 +1,33 @@
+name: Проверка запуска в Docker
+on:
+  push:
+    branches: [coursework]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Запустить стек и проверить API
+        run: |
+          {
+            echo POSTGRES_PASSWORD=compose-test-password
+            echo DATABASE_URL=postgresql://scheduler:compose-test-password@db:5432/scheduler
+            echo JWT_SECRET="$(openssl rand -hex 32)"
+            echo CHANNEL_KEY="$(openssl rand -base64 32)"
+            echo PORT=3000
+          } > .env
+          docker compose up --build -d
+          curl --fail --silent --show-error --retry 15 --retry-all-errors --retry-delay 2 http://127.0.0.1:3000/api/health
+          curl --fail --silent --show-error http://127.0.0.1:3000/login | grep -q 'id="root"'
+      - name: Диагностика
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Остановить тестовый стек
+        if: always()
+        run: docker compose down --volumes
