@@ -21,7 +21,6 @@ const post = z.object({
   protect_content: z.boolean().default(false),
   media_ids: z.array(z.number().int().positive()).max(10).default([]),
   attachment_ids: z.array(z.number().int().positive()).max(10).optional(),
-  image_url: z.url({ protocol: /^https$/ }).max(2048).nullish(),
   scheduled_at: z.iso.datetime(),
   status: z.enum(['draft', 'scheduled']),
 });
@@ -51,14 +50,11 @@ attachments.get('/:id', async (req, res) => {
   res.send(file.content);
 });
 async function savePost(req, res) {
-  const { channel_id, body, image_url, scheduled_at, status, silent, protect_content } = req.input;
+  const { channel_id, body, scheduled_at, status, silent, protect_content } = req.input;
   const result = await transaction(async client => {
     const channel = take(await client.query('SELECT platform FROM channels WHERE id=$1 AND user_id=$2 FOR KEY SHARE', [channel_id, req.userId]));
     if (status === 'scheduled' && Date.parse(scheduled_at) <= Date.now()) {
       throw Object.assign(error(400,'Время публикации должно быть в будущем'),{fields:{scheduled_at:'Выберите дату и время в будущем'}});
-    }
-    if (channel.platform === 'instagram' && (!image_url || body.length > 2200)) {
-      throw Object.assign(error(400,'Проверьте публикацию Instagram'),{fields:{...(!image_url?{image_url:'Добавьте HTTPS-ссылку на фото'}:{}),...(body.length>2200?{body:'Подпись Instagram — до 2200 символов'}:{})}});
     }
     let current;
     if (req.params.id) {
@@ -88,18 +84,18 @@ async function savePost(req, res) {
       if (/[<>]/.test(body)) throw Object.assign(error(400,'Проверьте описание'),{fields:{body:'YouTube не допускает знаки < и > в описании'}});
     }
     if (channel.platform === 'telegram' && body.length > (all.length ? 1024 : 4096)) throw Object.assign(error(400,'Слишком длинный текст Telegram'),{fields:{body:all.length?'Подпись к вложению — до 1024 символов':'Текст Telegram — до 4096 символов'}});
-    if (all.length && !['telegram','youtube'].includes(channel.platform)) throw error(400, 'Загрузка файлов доступна для Telegram');
+    if (all.length && !['telegram','youtube'].includes(channel.platform)) throw error(400, 'Платформа не поддерживается');
     if (channel.platform === 'telegram' && all.length && body.length > 1024) throw Object.assign(error(400,'Подпись к вложению — до 1024 символов'),{fields:{body:'Сократите подпись до 1024 символов'}});
     if (all.length > 1) {
       const family = item => ['photo','video'].includes(item.kind) ? 'visual' : item.kind;
       if (all.some(item => family(item) !== family(all[0])) || all.some(item => item.kind === 'animation')) throw error(400, 'Альбом может содержать фото и видео вместе, только музыку или только документы. GIF отправляется отдельно');
     }
     const html = channel.platform === 'telegram' ? telegramText(req.input.telegram_html) || null : null;
-    const values = [channel_id, body, channel.platform === 'instagram' ? image_url : null, scheduled_at, status, req.userId, html, silent, protect_content];
+    const values = [channel_id, body, scheduled_at, status, req.userId, html, silent, protect_content];
     const saved = current ? await client.query(
-      'UPDATE posts SET channel_id=$1,body=$2,image_url=$3,scheduled_at=$4,status=$5,telegram_html=$7,silent=$8,protect_content=$9,updated_at=now() WHERE user_id=$6 AND id=$10 RETURNING id', [...values, req.params.id],
+      'UPDATE posts SET channel_id=$1,body=$2,scheduled_at=$3,status=$4,telegram_html=$6,silent=$7,protect_content=$8,updated_at=now() WHERE user_id=$5 AND id=$9 RETURNING id', [...values, req.params.id],
     ) : await client.query(
-      'INSERT INTO posts(channel_id,body,image_url,scheduled_at,status,user_id,telegram_html,silent,protect_content) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id', values,
+      'INSERT INTO posts(channel_id,body,scheduled_at,status,user_id,telegram_html,silent,protect_content) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id', values,
     );
     const postId = saved.rows[0].id;
     await client.query('UPDATE posts SET youtube_title=$1,youtube_privacy=$2,youtube_made_for_kids=$3 WHERE id=$4',[channel.platform === 'youtube' ? req.input.youtube_title : null,req.input.youtube_privacy,req.input.youtube_made_for_kids,postId]);

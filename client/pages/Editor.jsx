@@ -80,7 +80,7 @@ function Fields({ kind, data, channels = [] }) {
         silent: input.silent === 'on', protect_content: input.protect_content === 'on',
         attachment_ids: ['telegram','youtube'].includes(currentChannel?.platform) ? attachments.filter(file => file.id && !file.media_id).map(file => file.id) : [],
         youtube_title: input.youtube_title || '', youtube_privacy:input.youtube_privacy || 'unlisted', youtube_made_for_kids:input.youtube_made_for_kids === 'true',
-        image_url: input.image_url || null, scheduled_at: new Date(input.scheduled_at).toISOString(), status: input.status,
+        scheduled_at: new Date(input.scheduled_at).toISOString(), status: input.status,
       };
       if (kind === 'channels') payload = {
         name: input.name, platform, destination: input.destination,
@@ -109,17 +109,17 @@ function Fields({ kind, data, channels = [] }) {
     {kind !== 'posts' && <FormField name="name" label="Название" message={fieldErrors.name}><input required maxLength={80} defaultValue={data?.name}/></FormField>}
     {kind === 'channels' ? <>
       <FormField name="platform" label="Платформа" message={fieldErrors.platform}><select value={platform} disabled={Boolean(data)} onChange={event => setPlatform(event.target.value)}>
-        <option value="telegram">Telegram</option><option value="instagram">Instagram</option><option value="youtube">YouTube</option></select></FormField>
+        <option value="telegram">Telegram</option><option value="youtube">YouTube</option></select></FormField>
       {platform === 'youtube' ? <>
         {data && <p className="muted">ID канала: {data.destination}</p>}
         <p className="muted">Выберите Google-аккаунт с нужным YouTube-каналом и разрешите просмотр канала и загрузку видео.</p>
         {data && <button className="secondary" type="button" disabled={pending} onClick={event=>connectYouTube(event.currentTarget.form)}>Обновить доступ через Google</button>}
         {data && <input type="hidden" name="destination" value={data.destination}/>}
       </> : <>
-      <FormField name="destination" label={platform === 'telegram' ? 'Имя или ID канала' : 'ID профессионального аккаунта'} message={fieldErrors.destination}>
-        <input required readOnly={Boolean(data)} defaultValue={data?.destination} placeholder={platform === 'telegram' ? '@my_channel' : 'Например, 17841400000000000'}/></FormField>
+      <FormField name="destination" label="Имя или ID канала" message={fieldErrors.destination}>
+        <input required readOnly={Boolean(data)} defaultValue={data?.destination} placeholder="@my_channel"/></FormField>
       <FormField name="token" label={data ? 'Новый токен (необязательно)' : 'Токен доступа'} message={fieldErrors.token}><input type="password" autoComplete="off" required={!data}/></FormField>
-      <p className="muted">{platform === 'telegram' ? 'Добавь своего бота администратором канала с правом публикации.' : 'Используй токен Instagram Login с правом публикации.'}</p>
+      <p className="muted">Добавь своего бота администратором канала с правом публикации.</p>
       </>}
     </> : <>
       {kind === 'posts' && <>
@@ -134,7 +134,7 @@ function Fields({ kind, data, channels = [] }) {
       {kind === 'posts' && currentChannel?.platform === 'telegram' ? <div className="composerText"><label>Текст публикации</label>
         <RichText body={body} html={html} invalid={Boolean(fieldErrors.body)} limit={attachments.length ? 1024 : 4096} onChange={value => { setBody(value.body); setHtml(value.html);setFieldErrors(current=>({...current,body:undefined})); }}/>
         <FieldError name="body" message={fieldErrors.body}/>
-      </div> : <FormField name="body" label={currentChannel?.platform === 'youtube' ? 'Описание видео' : 'Текст публикации'} message={fieldErrors.body}><textarea required={currentChannel?.platform !== 'youtube'} rows={7} maxLength={currentChannel?.platform === 'youtube' ? 5000 : currentChannel?.platform === 'instagram' ? 2200 : 4096} value={body} onChange={event => setBody(event.target.value)}/></FormField>}
+      </div> : <FormField name="body" label={currentChannel?.platform === 'youtube' ? 'Описание видео' : 'Текст публикации'} message={fieldErrors.body}><textarea required={currentChannel?.platform !== 'youtube'} rows={7} maxLength={currentChannel?.platform === 'youtube' ? 5000 : 4096} value={body} onChange={event => setBody(event.target.value)}/></FormField>}
       {kind === 'posts' && ['telegram','youtube'].includes(currentChannel?.platform) && <div className="mediaSection">
         <div className="attachmentActions"><FilePicker onSelect={addFiles} disabled={pending}/>
           <MediaSelector selectedIds={attachments.filter(file=>file.media_id).map(file=>file.media_id)} onSelect={file=>{
@@ -151,7 +151,6 @@ function Fields({ kind, data, channels = [] }) {
         </>}
       </div>}
       {kind === 'posts' && <>
-        {currentChannel?.platform === 'instagram' && <FormField name="image_url" label="HTTPS-ссылка на фото" message={fieldErrors.image_url}><input type="url" defaultValue={data?.image_url || ''} required/></FormField>}
         <div className="fieldRow">
           <FormField name="scheduled_at" label="Дата и время" message={fieldErrors.scheduled_at}><input type="datetime-local" defaultValue={localTime} required/></FormField>
           <FormField name="status" label="Режим" message={fieldErrors.status}><select defaultValue={data?.status === 'scheduled' ? 'scheduled' : 'draft'}><option value="draft">Черновик</option><option value="scheduled">Запланировать</option></select></FormField>

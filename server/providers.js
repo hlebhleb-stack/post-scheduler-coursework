@@ -75,27 +75,8 @@ async function telegram(token, method, body = {}) {
   return data.result;
 }
 
-async function instagram(token, path, fields) {
-  const version = process.env.INSTAGRAM_API_VERSION;
-  if (!/^v\d+\.\d+$/.test(version || '')) {
-    throw new ProviderError('Версия Instagram API не настроена', true);
-  }
-  const data = fields ? new URLSearchParams(fields) : undefined;
-  return request(`https://graph.instagram.com/${version}/${path}`, {
-    method: data ? 'POST' : 'GET',
-    headers: { Authorization: `Bearer ${token}` },
-    body: data,
-  });
-}
-
 export async function verifyChannel(platform, destination, token) {
-  if (platform === 'instagram') {
-    const account = await instagram(token, `${destination}?fields=id,username`);
-    if (String(account.id) !== destination) {
-      throw new ProviderError('Токен не соответствует указанному аккаунту', true);
-    }
-    return destination;
-  }
+  if (platform !== 'telegram') throw new ProviderError('Эта платформа не поддерживается',true);
   const bot = await telegram(token, 'getMe');
   const chat = await telegram(token, 'getChat', { chat_id: destination });
   if (chat.type !== 'channel') throw new ProviderError('Укажи Telegram-канал', true);
@@ -142,22 +123,5 @@ export async function publish(post) {
     if (!result?.message_id) throw new ProviderError('Telegram не подтвердил отправку');
     return String(result.message_id);
   }
-  let media;
-  try {
-    media = await instagram(token, `${post.destination}/media`, { image_url: post.image_url, caption: post.body });
-    if (!media.id) throw new ProviderError('Instagram не создал медиаконтейнер', true);
-    for (let i = 0; i < 8; i++) {
-      const status = await instagram(token, `${media.id}?fields=status_code`);
-      if (status.status_code === 'FINISHED') break;
-      if (status.status_code !== 'IN_PROGRESS' || i === 7) {
-        throw new ProviderError('Instagram не подготовил изображение', true);
-      }
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
-  } catch (error) {
-    throw new ProviderError(error instanceof ProviderError ? error.message : 'Не удалось подготовить изображение', true);
-  }
-  const result = await instagram(token, `${post.destination}/media_publish`, { creation_id: media.id });
-  if (!result.id) throw new ProviderError('Instagram не подтвердил публикацию');
-  return String(result.id);
+  throw new ProviderError('Эта платформа не поддерживается',true);
 }

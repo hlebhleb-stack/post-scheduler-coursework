@@ -7,7 +7,7 @@ export const labels = {
   draft: 'Черновик', scheduled: 'В расписании', publishing: 'Отправляется',
   published: 'Опубликовано', failed: 'Ошибка отправки', uncertain: 'Проверить вручную',
 };
-export const platforms = { telegram: 'Telegram', instagram: 'Instagram', youtube: 'YouTube' };
+export const platforms = { telegram: 'Telegram', youtube: 'YouTube' };
 export const time = date => new Date(date).toLocaleString('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
 export const clock = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' });
 export const day = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });

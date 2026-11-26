@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { db, transaction } from '../db.js';
+import { db } from '../db.js';
 import { error, take } from '../lib/http.js';
 import { fields } from '../middleware/validation.js';
 const router = Router();
@@ -12,15 +12,12 @@ import { access } from '../middleware/rate-limit.js';
 import { encrypt, verifyChannel, ProviderError } from '../providers.js';
 const name = z.string().trim().min(1).max(80);
 const channel = z.object({
-  name, platform: z.enum(['telegram', 'instagram', 'youtube']),
+  name, platform: z.enum(['telegram', 'youtube']),
   destination: z.string().trim().min(1).max(80),
   token: z.string().trim().min(1).max(2048).optional(),
 })
   .refine(({platform,destination})=>platform!=='telegram' || /^(?:@[a-zA-Z0-9_]{5,32}|-100\d{5,20})$/.test(destination), {
     path:['destination'],message:'Укажите @имя канала или числовой ID, начинающийся с -100',
-  })
-  .refine(({platform,destination})=>platform!=='instagram' || /^\d{5,30}$/.test(destination), {
-    path:['destination'],message:'ID профессионального аккаунта должен содержать только цифры',
   });
 
 async function checkChannel(platform,destination,token) {
@@ -44,7 +41,7 @@ router.get('/:id', async (req, res) => {
 router.post('', access, fields(channel), async (req, res) => {
   const { name, platform, destination, token } = req.input;
   if (platform === 'youtube') throw error(400,'Подключите YouTube кнопкой через Google');
-  if (!token) throw Object.assign(error(400,'Для подключения нужен токен'),{fields:{token:'Введите токен бота или аккаунта'}});
+  if (!token) throw Object.assign(error(400,'Для подключения нужен токен'),{fields:{token:'Введите токен бота'}});
   const verified = await checkChannel(platform, destination, token);
   res.status(201).json(take(await db.query(
     `INSERT INTO channels(user_id,name,platform,destination,credential) VALUES ($1,$2,$3,$4,$5) RETURNING ${channelColumns}`,
