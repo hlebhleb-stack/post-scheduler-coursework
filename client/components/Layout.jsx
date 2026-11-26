@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { NavLink, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { LogOut, Shield, LayoutDashboard, Images } from 'lucide-react';
 import { sections } from '../config.js';
@@ -13,54 +13,27 @@ export default function Layout() {
   const { session, logout } = useAuth();
   const { pathname } = useLocation();
   const navigation = useRef(null);
-  const pointerNavigation = useRef(false);
-  const positioned = useRef(false);
-  const [indicator, setIndicator] = useState(null);
 
   useLayoutEffect(() => {
     const nav = navigation.current;
-    function measure() {
+    const indicator = nav.querySelector('.navigationIndicator');
+    const placeIndicator = () => {
       const active = nav.querySelector('a.active');
       if (!active) return;
-      // Одна обводка движется между ссылками, сами пункты остаются на месте.
-      const next = {
-        top: active.offsetTop,
-        height: active.offsetHeight,
-        animate: positioned.current && pointerNavigation.current,
-      };
-      setIndicator((current) =>
-        current?.top === next.top && current?.height === next.height ? current : next,
-      );
-      positioned.current = true;
-      pointerNavigation.current = false;
-    }
-    measure();
-    const observer = new ResizeObserver(measure);
+      indicator.style.height = `${active.offsetHeight}px`;
+      indicator.style.transform = `translateY(${active.offsetTop}px)`;
+      requestAnimationFrame(() => (indicator.dataset.ready = 'true'));
+    };
+    placeIndicator();
+    const observer = new ResizeObserver(placeIndicator);
     observer.observe(nav);
     return () => observer.disconnect();
   }, [pathname, session.role]);
   return (
     <div className="shell">
       <aside className="sidebar">
-        <nav
-          className="sidebarNavigation"
-          ref={navigation}
-          aria-label="Разделы"
-          onPointerDownCapture={() => {
-            pointerNavigation.current = true;
-          }}
-          onKeyDownCapture={() => {
-            pointerNavigation.current = false;
-          }}
-        >
-          {indicator && (
-            <span
-              aria-hidden="true"
-              className="navigationIndicator"
-              data-animate={indicator.animate}
-              style={{ transform: `translateY(${indicator.top}px)`, height: indicator.height }}
-            />
-          )}
+        <nav className="sidebarNavigation" ref={navigation} aria-label="Разделы">
+          <span aria-hidden="true" className="navigationIndicator" />
           <NavLink to="/overview">
             <LayoutDashboard size={18} />
             <span>Обзор</span>

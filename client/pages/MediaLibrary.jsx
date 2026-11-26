@@ -1,4 +1,3 @@
-import { DeleteButton } from '../components/ui/DeleteButton.jsx';
 import { toast } from '../components/ui/Toast.jsx';
 import React, { useState, useEffect } from 'react';
 import { Upload, FolderOpen } from 'lucide-react';
@@ -85,16 +84,15 @@ export default function MediaLibrary() {
     }
   }
   async function remove(file) {
+    if (!window.confirm('Удалить файл «' + file.name + '» из медиатеки?')) return;
     setPending(true);
     setError('');
     try {
       await request('media/' + file.id, { method: 'DELETE' });
       setFiles((current) => current.filter((item) => item.id !== file.id));
       toast.success('Файл удалён');
-      return true;
     } catch (err) {
       toast.error(err.message);
-      return false;
     } finally {
       setPending(false);
     }
@@ -184,11 +182,9 @@ export default function MediaLibrary() {
                   >
                     Переименовать
                   </button>
-                  <DeleteButton
-                    disabled={pending}
-                    onConfirm={() => remove(file)}
-                    label={'Удалить файл «' + file.name + '»'}
-                  />
+                  <button className="danger" disabled={pending} onClick={() => remove(file)}>
+                    Удалить
+                  </button>
                 </div>
               )}
             </article>

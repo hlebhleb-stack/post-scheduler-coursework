@@ -9,7 +9,6 @@ import { MediaSelector } from '../MediaSelector.jsx';
 import { RichText } from '../editor/RichText.jsx';
 import { AttachmentList } from '../editor/AttachmentList.jsx';
 import { FilePicker } from '../editor/FilePicker.jsx';
-import { PublicationDateTime } from '../editor/PublicationDateTime.jsx';
 
 export function PostForm({ data, channels = [] }) {
   const navigate = useNavigate();
@@ -21,9 +20,7 @@ export function PostForm({ data, channels = [] }) {
   const [fieldErrors, setFieldErrors] = useState({});
   const [pending, setPending] = useState(false);
   const currentChannel = channels.find((channel) => String(channel.id) === channelId);
-  const [scheduledAt, setScheduledAt] = useState(() =>
-    localDateTime(data?.scheduled_at || Date.now() + 600000),
-  );
+  const localTime = localDateTime(data?.scheduled_at || Date.now() + 600000);
   const objectURLs = useRef([]);
   useEffect(() => () => objectURLs.current.forEach((url) => URL.revokeObjectURL(url)), []);
   function addFiles(files) {
@@ -82,7 +79,7 @@ export function PostForm({ data, channels = [] }) {
         youtube_title: input.youtube_title || '',
         youtube_privacy: input.youtube_privacy || 'unlisted',
         youtube_made_for_kids: input.youtube_made_for_kids === 'true',
-        scheduled_at: new Date(scheduledAt).toISOString(),
+        scheduled_at: new Date(input.scheduled_at).toISOString(),
         status: input.status,
       };
       if (attachments.some((item) => item.file)) {
@@ -260,14 +257,7 @@ export function PostForm({ data, channels = [] }) {
       </div>
       <div className="fieldRow">
         <FormField name="scheduled_at" label="Дата и время" message={fieldErrors.scheduled_at}>
-          <PublicationDateTime
-            value={scheduledAt}
-            onChange={(value) => {
-              setScheduledAt(value);
-              setFieldErrors((current) => ({ ...current, scheduled_at: undefined }));
-            }}
-            disabled={pending}
-          />
+          <input type="datetime-local" defaultValue={localTime} required disabled={pending} />
         </FormField>
         <FormField name="status" label="Режим" message={fieldErrors.status}>
           <select defaultValue={data?.status === 'scheduled' ? 'scheduled' : 'draft'}>

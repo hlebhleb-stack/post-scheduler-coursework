@@ -1,4 +1,3 @@
-import { DeleteButton } from '../components/ui/DeleteButton.jsx';
 import { toast } from '../components/ui/Toast.jsx';
 import React, { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -15,15 +14,14 @@ export default function Detail({ kind }) {
   const [pending, setPending] = useState(false);
   const data = result.data;
   async function remove() {
+    if (!window.confirm('Удалить запись?')) return;
     setPending(true);
     try {
       await request(kind + '/' + id, { method: 'DELETE' });
       toast.success(kind === 'posts' ? 'Публикация удалена' : 'Канал удалён');
       navigate('/' + kind);
-      return true;
     } catch (error) {
       toast.error(error.message);
-      return false;
     } finally {
       setPending(false);
     }
@@ -121,11 +119,9 @@ export default function Detail({ kind }) {
                 </Link>
               )}
               {data.status !== 'publishing' && (
-                <DeleteButton
-                  disabled={pending}
-                  onConfirm={remove}
-                  label={'Удалить ' + (data.name || data.youtube_title || 'публикацию')}
-                />
+                <button className="danger" type="button" disabled={pending} onClick={remove}>
+                  Удалить
+                </button>
               )}
               {data.status && (
                 <button className="quiet" onClick={() => window.location.reload()}>
