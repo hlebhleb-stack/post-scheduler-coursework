@@ -1,0 +1,111 @@
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+
+function key() {
+  const value = Buffer.from(process.env.CHANNEL_KEY || '', 'base64');
+  if (value.length !== 32) throw new Error('CHANNEL_KEY должен содержать 32 байта в base64');
+  return value;
+}
+
+export function encrypt(value) {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', key(), iv);
+  const content = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()]);
+  return Buffer.concat([iv, cipher.getAuthTag(), content]).toString('base64');
+}
+
+export function decrypt(value) {
+  const data = Buffer.from(value, 'base64');
+  const cipher = createDecipheriv('aes-256-gcm', key(), data.subarray(0, 12));
+  cipher.setAuthTag(data.subarray(12, 28));
+  return Buffer.concat([cipher.update(data.subarray(28)), cipher.final()]).toString('utf8');
+}
+
+export class ProviderError extends Error {
+  constructor(message, definitive = false) {
+    super(message);
+    this.definitive = definitive;
+  }
+}
+
+async function request(url, options) {
+  let response;
+  try {
+    response = await fetch(url, { ...options, signal: AbortSignal.timeout(15000), redirect: 'error' });
+  } catch {
+    throw new ProviderError('Нет ответа от платформы');
+  }
+  const body = await response.json().catch(() => null);
+  if (!response.ok || body?.ok === false || body?.error) {
+    throw new ProviderError(`Платформа отклонила запрос (HTTP ${response.status})`, response.status < 500);
+  }
+  if (!body) throw new ProviderError('Платформа вернула нечитаемый ответ');
+  return body;
+}
+
+async function telegram(token, method, body = {}) {
+  if (!/^\d+:[A-Za-z0-9_-]+$/.test(token)) throw new ProviderError('Неверный формат токена Telegram', true);
+  const data = await request(`https://api.telegram.org/bot${token}/${method}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return data.result;
+}
+
+async function instagram(token, path, fields) {
+  const version = process.env.INSTAGRAM_API_VERSION;
+  if (!/^v\d+\.\d+$/.test(version || '')) {
+    throw new ProviderError('Версия Instagram API не настроена', true);
+  }
+  const data = fields ? new URLSearchParams(fields) : undefined;
+  return request(`https://graph.instagram.com/${version}/${path}`, {
+    method: data ? 'POST' : 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+    body: data,
+  });
+}
+
+export async function verifyChannel(platform, destination, token) {
+  if (platform === 'instagram') {
+    const account = await instagram(token, `${destination}?fields=id,username`);
+    if (String(account.id) !== destination) {
+      throw new ProviderError('Токен не соответствует указанному аккаунту', true);
+    }
+    return destination;
+  }
+  const bot = await telegram(token, 'getMe');
+  const chat = await telegram(token, 'getChat', { chat_id: destination });
+  if (chat.type !== 'channel') throw new ProviderError('Укажи Telegram-канал', true);
+  const membership = await telegram(token, 'getChatMember', { chat_id: chat.id, user_id: bot.id });
+  if (membership.status !== 'creator' && !membership.can_post_messages) {
+    throw new ProviderError('У бота нет права публиковать в канале', true);
+  }
+  return String(chat.id);
+}
+
+export async function publish(post) {
+  const token = decrypt(post.credential);
+  if (post.platform === 'telegram') {
+    const result = await telegram(token, 'sendMessage', { chat_id: post.destination, text: post.body });
+    if (!result?.message_id) throw new ProviderError('Telegram не подтвердил отправку');
+    return String(result.message_id);
+  }
+  let media;
+  try {
+    media = await instagram(token, `${post.destination}/media`, { image_url: post.image_url, caption: post.body });
+    if (!media.id) throw new ProviderError('Instagram не создал медиаконтейнер', true);
+    for (let i = 0; i < 8; i++) {
+      const status = await instagram(token, `${media.id}?fields=status_code`);
+      if (status.status_code === 'FINISHED') break;
+      if (status.status_code !== 'IN_PROGRESS' || i === 7) {
+        throw new ProviderError('Instagram не подготовил изображение', true);
+      }
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+  } catch (error) {
+    throw new ProviderError(error instanceof ProviderError ? error.message : 'Не удалось подготовить изображение', true);
+  }
+  const result = await instagram(token, `${post.destination}/media_publish`, { creation_id: media.id });
+  if (!result.id) throw new ProviderError('Instagram не подтвердил публикацию');
+  return String(result.id);
+}

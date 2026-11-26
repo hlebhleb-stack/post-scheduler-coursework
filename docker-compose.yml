@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: scheduler
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Заполни POSTGRES_PASSWORD}
+      POSTGRES_DB: scheduler
+    volumes: [schedule_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U scheduler -d scheduler]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  migrate:
+    build: .
+    image: coursework-scheduler-local
+    env_file: [.env]
+    command: [npm, run, migrate]
+    depends_on:
+      db:
+        condition: service_healthy
+  app:
+    image: coursework-scheduler-local
+    pull_policy: never
+    env_file: [.env]
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+  worker:
+    image: coursework-scheduler-local
+    pull_policy: never
+    env_file: [.env]
+    command: [npm, run, worker]
+    init: true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+volumes:
+  schedule_data:
