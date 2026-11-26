@@ -18,10 +18,6 @@ const time = date => new Date(date).toLocaleString('ru-RU', { dateStyle: 'medium
 const clock = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' });
 const day = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
 
-function Brand({ link = false }) {
-  const mark = <><span className="brandMark"><CalendarDays size={19} aria-hidden="true"/></span> Расписание</>;
-  return link ? <Link className="brand" to="/posts">{mark}</Link> : <div className="brand">{mark}</div>;
-}
 const sessionKey = 'schedule-session';
 
 async function request(path, options = {}) {
@@ -104,7 +100,6 @@ function Auth({ onLogin, register }) {
   }
   return <main className="auth">
     <form className="authForm" onSubmit={submit}>
-      <Brand/>
       <div className="authHeading"><h1>{register ? 'Создать аккаунт' : 'С возвращением'}</h1>
         <p>{register ? 'Зарегистрируйтесь, чтобы планировать публикации.' : 'Войдите в свой планировщик.'}</p></div>
       <label>Электронная почта<input type="email" autoComplete="email" name="email" placeholder="name@example.com" required/></label>
@@ -119,7 +114,6 @@ function Auth({ onLogin, register }) {
 
 function Layout({ session, logout }) {
   return <div className="shell"><aside className="sidebar">
-    <Brand link/>
     <nav aria-label="Разделы">{Object.entries(sections).map(([key, {title, icon: Icon}]) =>
       <NavLink key={key} to={'/' + key}><Icon size={18}/>{title}</NavLink>)}</nav>
     <div className="identity"><span title={session.email}>{session.email}</span><button type="button" className="quiet logout" onClick={logout}><LogOut size={17} aria-hidden="true"/> Выйти</button></div>

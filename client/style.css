@@ -31,11 +31,11 @@ textarea { resize:vertical; min-height:190px; }
 label { display:grid; gap:8px; font-size:13px; font-weight:600; }
 .muted,small,.rowMeta { color:var(--muted); }
 .error { padding:12px 14px; color:#b42318; background:#fff2f0; border-radius:10px; font-size:14px; }
-.brand { display:flex; align-items:center; gap:10px; font-size:17px; font-weight:650; letter-spacing:-.025em; color:var(--ink); text-decoration:none; }
-.brandMark { width:32px; height:32px; display:grid; place-items:center; border-radius:9px; color:var(--accent); background:#e7f1ff; }
+
+
 .shell { display:grid; grid-template-columns:232px minmax(0,1fr); min-height:100dvh; }
 .sidebar { position:sticky; top:0; height:100dvh; display:flex; flex-direction:column; gap:43px; padding:32px 16px 18px; background:#ededf0; border-right:1px solid #e1e1e6; }
-.sidebar .brand { padding-inline:12px; }
+
 nav { display:grid; gap:5px; }
 nav a { display:flex; align-items:center; gap:11px; min-height:42px; padding:10px 13px; border-radius:9px; color:#515157; text-decoration:none; font-size:14px; font-weight:500; }
 nav a.active { color:#0066cc; background:#fff; box-shadow:0 1px 3px #00000006; }
@@ -93,21 +93,21 @@ nav a svg { stroke-width:1.7; }
 .delivery { border-top:1px solid var(--line); padding-top:24px; }.delivery p { margin-top:12px; font-size:13px; color:var(--muted); }
 .auth { min-height:100dvh; display:grid; place-items:center; background:#fff; padding:48px 24px; }
 .authForm { width:100%; max-width:360px; display:grid; gap:23px; }
-.authForm .brand { justify-content:center; margin-bottom:19px; font-size:15px; }
+
 .authHeading { text-align:center; margin-bottom:8px; }.authHeading h1 { font-size:30px; }.authHeading p { margin-top:11px; color:var(--muted); font-size:14px; }
 .authForm input { min-height:50px; font-size:16px; }
 .authForm > .primary { min-height:48px; margin-top:4px; font-size:15px; }
 .passwordField { position:relative; }.passwordField input { padding-right:48px; }.passwordField button { position:absolute; right:0; top:0; width:48px; height:50px; display:grid; place-items:center; border:0; background:transparent; color:var(--muted); border-radius:10px; }
 .authSwitch { font-size:13px; color:var(--muted); text-align:center; }.authSwitch a { text-decoration:none; margin-left:4px; }
 @media(max-width:760px) {
-  .shell { display:block; }.sidebar { position:static; height:auto; gap:20px; padding:18px 20px 0; border-right:0; border-bottom:1px solid var(--line); background:#fff; }.sidebar .brand { padding:0; }
-  nav { display:flex; gap:22px; }nav a { border-radius:0; min-height:46px; padding:8px 0 14px; font-size:13px; border-bottom:2px solid transparent; }nav a.active { box-shadow:none; border-bottom-color:var(--accent); }
+  .shell { display:block; }.sidebar { position:static; height:auto; gap:20px; padding:18px 20px 0; border-right:0; border-bottom:1px solid var(--line); background:#fff; }
+  nav { display:flex; gap:22px; padding-right:48px; }nav a { border-radius:0; min-height:46px; padding:8px 0 14px; font-size:13px; border-bottom:2px solid transparent; }nav a.active { box-shadow:none; border-bottom-color:var(--accent); }
   .identity { position:absolute; right:20px; top:15px; padding:0; border:0; }.identity span { display:none; }.identity .logout { font-size:12px; }
   .workspace { padding:32px 20px 48px; }h1 { font-size:29px; }.pageHeading { gap:15px; margin-bottom:25px; align-items:flex-start; }.pageHeading .primary { font-size:12px; padding:10px 12px; }.pageHeading .primary svg { width:15px; }
   .statusTabs { gap:23px; margin-bottom:18px; }.filters { padding:13px; flex-wrap:wrap; }.filters select { min-width:120px; flex:1; }.searchField { flex:1; min-width:160px; }.tableHead { display:none; }
   .rows { border-top:1px solid var(--line); }.rows a { grid-template-columns:minmax(0,1fr) auto; padding:19px 16px; gap:7px 12px; }.rowMeta { grid-row:2; font-size:12px; }.rowMeta small { display:inline; margin-left:7px; }.rowEnd { grid-column:2; grid-row:1 / span 2; }.rowEnd > svg { display:none; }
   .formPanel { padding:22px; gap:24px; border-radius:14px; }.fieldRow { grid-template-columns:1fr; }.formPage .pageHeading { margin-bottom:25px; }.empty { padding:52px 16px; }
-  .auth { padding:40px 24px; }.authForm { gap:22px; }.authForm .brand { margin-bottom:12px; }
+  .auth { padding:40px 24px; }.authForm { gap:22px; }
 }
 @media(max-width:380px) { .pageHeading { flex-wrap:wrap; }.filters select { width:100%; }.workspace { padding-inline:16px; } }
 @media(prefers-reduced-motion:no-preference) { button,a,input,textarea,select { transition:background-color .15s,border-color .15s; } }
