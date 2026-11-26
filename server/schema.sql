@@ -43,3 +43,17 @@ CREATE TABLE IF NOT EXISTS deliveries (
 CREATE INDEX IF NOT EXISTS posts_due ON posts(scheduled_at) WHERE status = 'scheduled';
 CREATE INDEX IF NOT EXISTS posts_owner ON posts(user_id, scheduled_at);
 CREATE INDEX IF NOT EXISTS deliveries_post ON deliveries(post_id);
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS telegram_html text;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS silent boolean NOT NULL DEFAULT false;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS protect_content boolean NOT NULL DEFAULT false;
+CREATE TABLE IF NOT EXISTS attachments (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  post_id integer NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  mime text NOT NULL,
+  kind text NOT NULL CHECK (kind IN ('photo','video','audio','animation','document')),
+  content bytea NOT NULL,
+  size integer NOT NULL CHECK (size > 0),
+  position integer NOT NULL
+);
+CREATE INDEX IF NOT EXISTS attachments_post ON attachments(post_id);

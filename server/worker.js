@@ -10,7 +10,7 @@ async function claim() {
     await client.query(`UPDATE posts SET status='uncertain',updated_at=now()
       WHERE status='publishing' AND updated_at < now() - interval '5 minutes'`);
     const { rows: [post] } = await client.query(`
-      SELECT p.id,p.body,p.image_url,c.platform,c.destination,c.credential
+      SELECT p.id,p.body,p.image_url,p.telegram_html,p.silent,p.protect_content,c.platform,c.destination,c.credential
       FROM posts p JOIN channels c ON c.id=p.channel_id
       WHERE p.status='scheduled' AND p.scheduled_at<=now()
       ORDER BY p.scheduled_at,p.id LIMIT 1 FOR UPDATE OF p SKIP LOCKED
@@ -27,7 +27,8 @@ async function processPost(post) {
   let status = 'published';
   let message = null;
   try {
-    externalId = await publish(post);
+    const { rows: attachments } = await db.query('SELECT * FROM attachments WHERE post_id=$1 ORDER BY position,id', [post.id]);
+    externalId = await publish({ ...post, attachments });
   } catch (error) {
     status = error instanceof ProviderError && error.definitive ? 'failed' : 'uncertain';
     message = error instanceof ProviderError ? error.message : 'Не удалось подтвердить результат отправки';

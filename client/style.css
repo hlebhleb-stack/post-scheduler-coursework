@@ -149,3 +149,21 @@ select {
 }
 
 @media(max-width:760px) { nav a svg { display:none; } }
+.composerText, .mediaSection { display:grid; gap:12px; }
+.richField { border:1px solid #d2d2d7; border-radius:10px; overflow:hidden; }
+.richField:focus-within { border-color:var(--accent); }
+.formatTools { display:flex; flex-wrap:wrap; gap:2px; padding:6px; background:#fafafa; border-bottom:1px solid var(--line); }
+.formatTools button { width:36px; height:36px; display:grid; place-items:center; border:0; border-radius:6px; background:transparent; color:var(--muted); }
+.formatTools button:hover { background:var(--wash); }.formatTools button[aria-pressed=true] { color:var(--accent); background:#e7f1ff; }
+.tiptap { padding:14px; min-height:190px; outline:none; overflow-wrap:anywhere; font-size:var(--text-body); line-height:1.5; }
+.tiptap p { margin:0 0 8px; }.tiptap p:last-child { margin-bottom:0; }.tiptap p.is-editor-empty:first-child::before { content:attr(data-placeholder); color:#86868b; float:left; height:0; pointer-events:none; }
+.tiptap blockquote { border-left:3px solid var(--accent); padding-left:12px; margin:8px 0; color:var(--muted); }
+.tiptap code { background:#f0f0f3; border-radius:4px; padding:2px 4px; }.tiptap pre { white-space:pre-wrap; background:var(--wash); padding:12px; border-radius:8px; }
+tg-spoiler { background:#e3e3e8; border-radius:3px; }
+.textCount { display:block; text-align:right; padding:6px 12px; color:var(--muted); font-size:var(--text-caption); }.overLimit { color:#b42318; }
+.richRead .tiptap { min-height:0; padding:0; }
+.filePicker { display:inline-flex; align-items:center; gap:8px; justify-self:start; padding:10px 14px; background:var(--wash); border-radius:8px; color:var(--accent); cursor:pointer; }
+.filePicker input { position:absolute; width:1px; height:1px; opacity:0; min-height:0; padding:0; }.filePicker:focus-within { outline:2px solid var(--accent); }.filePicker.disabled { opacity:.5; }
+.checkField { display:flex; align-items:center; gap:10px; font-weight:400; }.checkField input { width:18px; height:18px; min-height:0; accent-color:var(--accent); }
+.attachmentList { display:grid; gap:12px; min-width:0; }.attachment { border:1px solid var(--line); border-radius:10px; overflow:hidden; padding:12px; }.attachmentInfo { display:flex; align-items:center; gap:10px; }.attachmentInfo > span { flex:1; min-width:0; }.attachmentInfo strong { display:block; font-weight:600; font-size:var(--text-caption); overflow-wrap:anywhere; }.attachmentInfo small { display:block; font-size:var(--text-caption); margin-top:3px; }
+.mediaPreview { display:block; max-width:100%; max-height:260px; border-radius:6px; margin-top:12px; object-fit:contain; }.attachment audio { display:block; margin-top:12px; width:100%; }

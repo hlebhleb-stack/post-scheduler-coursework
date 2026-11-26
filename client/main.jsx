@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CalendarDays, FileText, Hash, LogOut, Plus, Search, X, Eye, EyeOff } from 'lucide-react';
 import './style.css';
+import { RichText, AttachmentList, FilePicker } from './Composer.jsx';
 
 const sections = {
   posts: { title: 'Публикации', action: 'Создать публикацию', search: 'Поиск по тексту', empty: 'Публикаций пока нет', icon: CalendarDays },
@@ -27,9 +28,9 @@ async function request(path, options = {}) {
     signal: options.signal,
     headers: {
       ...(session ? { Authorization: 'Bearer ' + session.token } : {}),
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.body && !(options.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
     },
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body: options.body instanceof FormData ? options.body : options.body ? JSON.stringify(options.body) : undefined,
   });
   if (result.status === 204) return null;
   const data = await result.json().catch(() => ({}));
@@ -152,7 +153,7 @@ function List({ kind }) {
       {!rows ? <div className="empty"><Feedback result={result}/></div> : rows.length ? <>
         <div className="tableHead"><span>{kind === 'posts' ? 'Публикация' : 'Название'}</span><span>{kind === 'posts' ? 'Дата и время' : kind === 'channels' ? 'Платформа' : 'Текст'}</span><span>{kind === 'posts' ? 'Статус' : ''}</span></div>
         <ul className="rows">{rows.map(row => <li key={row.id}><Link to={'/' + kind + '/' + row.id}>
-          <span className="rowTitle"><strong>{row.name || row.body.slice(0, 90)}</strong>{row.channel_name && <small>{row.channel_name}</small>}</span>
+          <span className="rowTitle"><strong>{row.name || row.body.slice(0, 90) || row.attachments?.[0]?.name || 'Вложение'}</strong>{row.channel_name && <small>{row.channel_name}</small>}</span>
           <span className="rowMeta">{row.scheduled_at ? <time dateTime={row.scheduled_at}>{day.format(new Date(row.scheduled_at))}<small>{clock.format(new Date(row.scheduled_at))}</small></time>
             : row.platform ? platforms[row.platform] : row.body.slice(0,55)}</span>
           <span className="rowEnd">{row.status && <Status status={row.status}/>}<ArrowRight size={16} aria-hidden="true"/></span></Link></li>)}</ul>
@@ -189,7 +190,10 @@ function Detail({ kind }) {
   return <section className="formPage"><Back kind={kind}/>{!data ? <Feedback result={result}/> : <>
     <header className="pageHeading"><div><h1>{data.name || 'Публикация'}</h1>{data.status && <Status status={data.status}/>}</div></header>
     <div className="formPanel detail">
-      {data.body && <p className="bodyText">{data.body}</p>}
+      {data.telegram_html ? <RichText body={data.body} html={data.telegram_html} readOnly/> : data.body && <p className="bodyText">{data.body}</p>}
+      {data.attachments?.length > 0 && <AttachmentList files={data.attachments}/>}
+      {data.silent && <p className="muted">Без звука</p>}
+      {data.protect_content && <p className="muted">Защита от копирования включена</p>}
       {data.platform && <dl><dt>Платформа</dt><dd>{platforms[data.platform]}</dd>
         {data.destination && <><dt>{data.platform === 'telegram' ? 'ID канала' : 'ID аккаунта'}</dt><dd>{data.destination}</dd></>}
         {data.channel_name && <><dt>Канал</dt><dd>{data.channel_name}</dd></>}
@@ -223,6 +227,26 @@ function Editor({ kind, create = false }) {
 function Fields({ kind, data, channels = [], templates = [] }) {
   const navigate = useNavigate();
   const [body, setBody] = useState(data?.body || '');
+  const [html, setHtml] = useState(data?.telegram_html || '');
+  const [attachments, setAttachments] = useState(data?.attachments || []);
+  const objectURLs = useRef([]);
+  useEffect(() => () => objectURLs.current.forEach(url => URL.revokeObjectURL(url)), []);
+  function addFiles(files) {
+    if (attachments.length + files.length > 10 || [...attachments, ...files].reduce((sum, file) => sum + file.size, 0) > 50 * 1024 * 1024) {
+      setError('До 10 файлов общим размером до 50 МБ'); return;
+    }
+    const added = files.map(file => {
+      const ext = file.name.split('.').pop().toLowerCase();
+      let kind = 'document';
+      if (['jpg','jpeg','png'].includes(ext) && file.type.startsWith('image/')) kind = 'photo';
+      if (ext === 'gif' && file.type === 'image/gif') kind = 'animation';
+      if (ext === 'mp4' && file.type === 'video/mp4') kind = 'video';
+      if (['mp3','m4a'].includes(ext) && file.type.startsWith('audio/')) kind = 'audio';
+      const url = URL.createObjectURL(file); objectURLs.current.push(url);
+      return { file, name:file.name, mime:file.type, size:file.size, kind, url };
+    });
+    setAttachments([...attachments, ...added]); setError('');
+  }
   const [platform, setPlatform] = useState(data?.platform || 'telegram');
   const [channelId, setChannelId] = useState(String(data?.channel_id || channels[0]?.id || ''));
   const [error, setError] = useState('');
@@ -239,12 +263,21 @@ function Fields({ kind, data, channels = [], templates = [] }) {
       let payload = input;
       if (kind === 'posts') payload = {
         channel_id: Number(channelId), body,
+        telegram_html: currentChannel?.platform === 'telegram' ? html || null : null,
+        silent: input.silent === 'on', protect_content: input.protect_content === 'on',
+        attachment_ids: currentChannel?.platform === 'telegram' ? attachments.filter(file => file.id).map(file => file.id) : [],
         image_url: input.image_url || null, scheduled_at: new Date(input.scheduled_at).toISOString(), status: input.status,
       };
       if (kind === 'channels') payload = {
         name: input.name, platform, destination: input.destination,
         ...(input.token ? { token: input.token } : {}),
       };
+      if (kind === 'posts' && currentChannel?.platform === 'telegram' && attachments.some(item => item.file)) {
+        const form = new FormData();
+        form.set('payload', JSON.stringify(payload));
+        attachments.filter(item => item.file).forEach(item => form.append('files', item.file));
+        payload = form;
+      }
       const row = await request(kind + (data ? '/' + data.id : ''), { method: data ? 'PUT' : 'POST', body: payload });
       navigate('/' + kind + '/' + row.id);
     } catch (error) {
@@ -271,10 +304,20 @@ function Fields({ kind, data, channels = [], templates = [] }) {
           {channels.map(item => <option key={item.id} value={item.id}>{item.name} · {platforms[item.platform]}</option>)}</select></label>
         {templates.length > 0 && <label>Подставить текст шаблона<select defaultValue="" onChange={event => {
           const selected = templates.find(item => String(item.id) === event.target.value);
-          if (selected) setBody(selected.body);
+          if (selected) { setBody(selected.body); setHtml(''); }
         }}><option value="">Выбрать шаблон</option>{templates.map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>}
       </>}
-      <label>{kind === 'posts' ? 'Текст публикации' : 'Текст шаблона'}<textarea name="body" required rows={7} maxLength={currentChannel?.platform === 'instagram' ? 2200 : 4096} value={body} onChange={event => setBody(event.target.value)}/></label>
+      {kind === 'posts' && currentChannel?.platform === 'telegram' ? <div className="composerText"><label>Текст публикации</label>
+        <RichText body={body} html={html} limit={attachments.length ? 1024 : 4096} onChange={value => { setBody(value.body); setHtml(value.html); }}/>
+      </div> : <label>{kind === 'posts' ? 'Текст публикации' : 'Текст шаблона'}<textarea name="body" required rows={7} maxLength={currentChannel?.platform === 'instagram' ? 2200 : 4096} value={body} onChange={event => setBody(event.target.value)}/></label>}
+      {kind === 'posts' && currentChannel?.platform === 'telegram' && <div className="mediaSection">
+        <FilePicker onSelect={addFiles} disabled={pending}/>
+        <p className="muted">До 10 файлов, всего до 50 МБ. Фото — до 10 МБ. Подпись — до 1024 символов.</p>
+        <AttachmentList files={attachments} onRemove={index => setAttachments(attachments.filter((_,i) => i !== index))}/>
+        {attachments.length > 1 && <p className="muted">Альбом — фото и видео вместе, только музыка или только документы. GIF отправляется отдельно.</p>}
+        <label className="checkField"><input type="checkbox" name="silent" defaultChecked={data?.silent}/>Отправить без звука</label>
+        <label className="checkField"><input type="checkbox" name="protect_content" defaultChecked={data?.protect_content}/>Запретить сохранение и пересылку</label>
+      </div>}
       {kind === 'posts' && <>
         {currentChannel?.platform === 'instagram' && <label>HTTPS-ссылка на фото<input name="image_url" type="url" defaultValue={data?.image_url || ''} required/></label>}
         <div className="fieldRow">
