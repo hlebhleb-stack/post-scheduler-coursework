@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, CalendarDays, FileText, Hash, LogOut, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CalendarDays, FileText, Hash, LogOut, Plus, Search, X } from 'lucide-react';
+import '@fontsource-variable/manrope/wght.css';
 import './style.css';
 
 const sections = {
-  posts: { title: 'Публикации', singular: 'публикацию', icon: CalendarDays, describe: 'Черновики, расписание и результаты отправки.' },
-  channels: { title: 'Каналы', singular: 'канал', icon: Hash, describe: 'Подключённые каналы и аккаунты для отправки.' },
-  templates: { title: 'Шаблоны', singular: 'шаблон', icon: FileText, describe: 'Готовые тексты для повторяющихся публикаций.' },
+  posts: { title: 'Публикации', action: 'Создать публикацию', search: 'Поиск по тексту', empty: 'Публикаций пока нет', icon: CalendarDays },
+  channels: { title: 'Каналы', action: 'Подключить канал', search: 'Поиск по названию', empty: 'Каналы пока не подключены', icon: Hash },
+  templates: { title: 'Шаблоны', action: 'Создать шаблон', search: 'Поиск по названию', empty: 'Шаблонов пока нет', icon: FileText },
 };
 const labels = {
   draft: 'Черновик', scheduled: 'В расписании', publishing: 'Отправляется',
@@ -15,6 +16,13 @@ const labels = {
 };
 const platforms = { telegram: 'Telegram', instagram: 'Instagram' };
 const time = date => new Date(date).toLocaleString('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
+const clock = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' });
+const day = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+
+function Brand({ link = false }) {
+  const mark = <><span className="brandMark"><CalendarDays size={19} aria-hidden="true"/></span> Расписание</>;
+  return link ? <Link className="brand" to="/posts">{mark}</Link> : <div className="brand">{mark}</div>;
+}
 const sessionKey = 'schedule-session';
 
 async function request(path, options = {}) {
@@ -95,8 +103,8 @@ function Auth({ onLogin, register }) {
     }
   }
   return <main className="auth">
-    <div className="authIntro"><div className="brand"><CalendarDays size={23}/> Расписание</div>
-      <h1>Публикации<br/>по плану.</h1><p>Составляй расписание, сохраняй тексты и отправляй посты в подключённые каналы.</p>
+    <div className="authIntro"><Brand/>
+      <div><h1>Планировщик<br/>публикаций</h1><p>Черновики, шаблоны и отправка в подключённые каналы по расписанию.</p></div>
     </div>
     <form className="authForm" onSubmit={submit}>
       <h2>{register ? 'Создать аккаунт' : 'Вход'}</h2>
@@ -111,10 +119,10 @@ function Auth({ onLogin, register }) {
 
 function Layout({ session, logout }) {
   return <div className="shell"><aside className="sidebar">
-    <Link className="brand" to="/posts"><CalendarDays size={21}/> Расписание</Link>
+    <Brand link/>
     <nav aria-label="Разделы">{Object.entries(sections).map(([key, {title, icon: Icon}]) =>
       <NavLink key={key} to={'/' + key}><Icon size={18}/>{title}</NavLink>)}</nav>
-    <div className="identity"><span title={session.email}>{session.email}</span><button type="button" className="quiet" onClick={logout}><LogOut size={16}/> Выйти</button></div>
+    <div className="identity"><span title={session.email}>{session.email}</span><button type="button" className="quiet logout" onClick={logout}><LogOut size={17} aria-hidden="true"/> Выйти</button></div>
   </aside><main className="workspace"><Routes>
     {Object.keys(sections).map(kind => <React.Fragment key={kind}>
       <Route path={kind} element={<List key={kind} kind={kind}/>}/>
@@ -136,21 +144,25 @@ function List({ kind }) {
     && (!status || row.status === status)
   ));
   return <section>
-    <header className="pageHeading"><div><h1>{meta.title}</h1><p>{meta.describe}</p></div>
-      <Link className="primary" to={'/' + kind + '/new'}><Plus size={19}/> Добавить {meta.singular}</Link></header>
+    <header className="pageHeading"><h1>{meta.title}</h1>
+      <Link className="primary" to={'/' + kind + '/new'}><Plus size={18} aria-hidden="true"/> {meta.action}</Link></header>
     <div className="listPanel">
-      <div className="filters"><input aria-label="Поиск" placeholder="Поиск" value={search} onChange={event => setSearch(event.target.value)}/>
+      <div className="filters"><div className="searchField"><Search size={17} aria-hidden="true"/>
+        <input aria-label={meta.search} placeholder={meta.search} value={search} onChange={event => setSearch(event.target.value)}/>
+        {search && <button type="button" onClick={() => setSearch('')} aria-label="Очистить поиск"><X size={16} aria-hidden="true"/></button>}
+      </div>
         {kind === 'posts' && <select aria-label="Статус" value={status} onChange={event => setStatus(event.target.value)}>
           <option value="">Все статусы</option>{Object.entries(labels).map(([key,label]) => <option value={key} key={key}>{label}</option>)}
         </select>}</div>
       {!rows ? <div className="empty"><Feedback result={result}/></div> : rows.length ? <>
-        <div className="tableHead"><span>{kind === 'posts' ? 'Публикация' : 'Название'}</span><span>{kind === 'posts' ? 'Запланировано' : 'Детали'}</span><span>{kind === 'posts' ? 'Статус' : ''}</span></div>
+        <div className="tableHead"><span>{kind === 'posts' ? 'Публикация' : 'Название'}</span><span>{kind === 'posts' ? 'Дата и время' : kind === 'channels' ? 'Платформа' : 'Текст'}</span><span>{kind === 'posts' ? 'Статус' : ''}</span></div>
         <ul className="rows">{rows.map(row => <li key={row.id}><Link to={'/' + kind + '/' + row.id}>
           <span className="rowTitle"><strong>{row.name || row.body.slice(0, 90)}</strong>{row.channel_name && <small>{row.channel_name}</small>}</span>
-          <span className="rowMeta">{row.scheduled_at ? time(row.scheduled_at) : row.platform ? platforms[row.platform] : row.body.slice(0,55)}</span>
-          <span className="rowEnd">{row.status && <Status status={row.status}/>}<ArrowRight size={16}/></span></Link></li>)}</ul>
-      </> : <div className="empty"><strong>{search || status ? 'Совпадений нет' : 'Пока здесь пусто'}</strong>
-        <p>{search || status ? 'Измени фильтры или запрос.' : 'Добавь первую запись, чтобы начать.'}</p></div>}
+          <span className="rowMeta">{row.scheduled_at ? <time dateTime={row.scheduled_at}>{day.format(new Date(row.scheduled_at))}<small>{clock.format(new Date(row.scheduled_at))}</small></time>
+            : row.platform ? platforms[row.platform] : row.body.slice(0,55)}</span>
+          <span className="rowEnd">{row.status && <Status status={row.status}/>}<ArrowRight size={16} aria-hidden="true"/></span></Link></li>)}</ul>
+      </> : <div className="empty"><strong>{search || status ? 'Совпадений нет' : meta.empty}</strong>
+        {(search || status) && <button className="quiet" type="button" onClick={() => { setSearch(''); setStatus(''); }}>Сбросить фильтры</button>}</div>}
     </div>
   </section>;
 }
@@ -184,7 +196,7 @@ function Detail({ kind }) {
     <div className="formPanel detail">
       {data.body && <p className="bodyText">{data.body}</p>}
       {data.platform && <dl><dt>Платформа</dt><dd>{platforms[data.platform]}</dd>
-        {data.destination && <><dt>Получатель</dt><dd>{data.destination}</dd></>}
+        {data.destination && <><dt>{data.platform === 'telegram' ? 'ID канала' : 'ID аккаунта'}</dt><dd>{data.destination}</dd></>}
         {data.channel_name && <><dt>Канал</dt><dd>{data.channel_name}</dd></>}
         {data.scheduled_at && <><dt>Время</dt><dd>{time(data.scheduled_at)}</dd></>}</dl>}
       {data.deliveries?.length > 0 && <div className="delivery"><h2>История отправки</h2>
@@ -208,7 +220,7 @@ function Editor({ kind, create = false }) {
   const templates = create ? result.templates : references.templates;
   const ready = create ? kind !== 'posts' || channels : result.data && (kind !== 'posts' || channels);
   return <section className="formPage"><Back kind={kind}/>
-    <header className="pageHeading"><h1>{create ? 'Добавить ' + sections[kind].singular : 'Редактирование'}</h1></header>
+    <header className="pageHeading"><h1>{create ? sections[kind].action : 'Редактирование'}</h1></header>
     {!ready ? <Feedback result={result.error ? result : references}/> : <Fields key={kind + (id || 'new')} kind={kind} data={result.data} channels={channels} templates={templates}/>}
   </section>;
 }
@@ -247,7 +259,7 @@ function Fields({ kind, data, channels = [], templates = [] }) {
     }
   }
   if (kind === 'posts' && !channels.length) return <div className="formPanel">
-    <p>Сначала подключи получателя, чтобы запланировать публикацию.</p><Link className="primary" to="/channels/new">Подключить канал</Link>
+    <p>Подключи канал, чтобы создать публикацию.</p><Link className="primary" to="/channels/new">Подключить канал</Link>
   </div>;
   return <form className="formPanel" onSubmit={save}>
     {kind !== 'posts' && <label>Название<input name="name" required maxLength={80} defaultValue={data?.name}/></label>}
