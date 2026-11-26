@@ -1,27 +1,31 @@
 import React from 'react';
-import {NavLink,Route,Routes,Navigate} from 'react-router-dom';
-import {LogOut,Shield} from 'lucide-react';
+import {NavLink,Route,Routes,Navigate,useLocation} from 'react-router-dom';
+import {LogOut,Shield,LayoutDashboard,ChevronRight} from 'lucide-react';
 import {sections} from '../config.js';
 import {useAuth} from '../context/AuthContext.jsx';
 import List from '../pages/List.jsx';
 import Detail from '../pages/Detail.jsx';
 import Editor from '../pages/Editor.jsx';
 import Admin from '../pages/Admin.jsx';
+import Dashboard from '../pages/Dashboard.jsx';
 export default function Layout() {
   const { session,logout } = useAuth();
+  const location = useLocation();
+  const title = location.pathname.startsWith('/overview') ? 'Обзор' : location.pathname.startsWith('/admin') ? 'Администрирование' : sections[location.pathname.split('/')[1]]?.title || 'Обзор';
   return <div className="shell"><aside className="sidebar">
-    <nav aria-label="Разделы">{Object.entries(sections).map(([key, {title, icon: Icon}]) =>
+    <nav aria-label="Разделы"><NavLink to="/overview"><LayoutDashboard size={18}/>Обзор</NavLink>{Object.entries(sections).map(([key, {title, icon: Icon}]) =>
       <NavLink key={key} to={'/' + key}><Icon size={18}/>{title}</NavLink>)}{session.role === 'admin' && <NavLink to="/admin"><Shield size={18}/>Администрирование</NavLink>}</nav>
     <div className="identity"><span title={session.email}>{session.email}</span><button type="button" className="quiet logout" onClick={logout}><LogOut size={17} aria-hidden="true"/> Выйти</button></div>
-  </aside><main className="workspace"><Routes>
+  </aside><div className="mainArea"><div className="workspaceBar"><span>Планировщик</span><ChevronRight size={14}/><strong>{title}</strong><span className="barEmail">{session.email}</span></div><main className="workspace"><Routes>
+    <Route path="overview" element={<Dashboard/>}/>
     {Object.keys(sections).map(kind => <React.Fragment key={kind}>
       <Route path={kind} element={<List key={kind} kind={kind}/>}/>
       <Route path={kind + '/new'} element={<Editor key={kind + '/new'} kind={kind} create/>}/>
       <Route path={kind + '/:id'} element={<Detail key={kind + '/detail'} kind={kind}/>}/>
       <Route path={kind + '/:id/edit'} element={<Editor key={kind + '/edit'} kind={kind}/>}/>
     </React.Fragment>)}
-    <Route path="admin" element={session.role === 'admin' ? <Admin/> : <Navigate to="/posts" replace/>}/>
-    <Route path="*" element={<Navigate to="/posts" replace/>}/>
-  </Routes></main></div>;
+    <Route path="admin" element={session.role === 'admin' ? <Admin/> : <Navigate to="/overview" replace/>}/>
+    <Route path="*" element={<Navigate to="/overview" replace/>}/>
+  </Routes></main></div></div>;
 }
 

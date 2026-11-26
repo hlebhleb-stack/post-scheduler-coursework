@@ -4,6 +4,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import newman from 'newman';
 import { checkAdmin } from './admin-api.mjs';
+import { checkAnalytics } from './analytics-api.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 if (!process.env.TEST_DATABASE_URL) throw new Error('Задай TEST_DATABASE_URL отдельной тестовой PostgreSQL');
@@ -38,7 +39,10 @@ try {
     workingDir:root, timeoutRequest:10000, reporters:['cli'],
   }, (error, result) => error ? reject(error) : resolve(result)));
   if (summary.run.failures.length) process.exitCode = 1;
-  else await checkAdmin(base, env.DATABASE_URL);
+  else {
+    await checkAdmin(base, env.DATABASE_URL);
+    await checkAnalytics(base, env.DATABASE_URL, env.JWT_SECRET);
+  }
 } finally {
   server.kill('SIGTERM');
   await new Promise(resolve => {

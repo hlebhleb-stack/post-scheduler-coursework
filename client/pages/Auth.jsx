@@ -18,7 +18,7 @@ export default function Auth({ register }) {
       if (register) await request('auth/register', { method: 'POST', body: input });
       const session = await request('auth/login', { method: 'POST', body: input });
       login(session);
-      navigate('/posts');
+      navigate('/overview');
     } catch (error) {
       setError(error.message);
     } finally {
