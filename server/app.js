@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { fileURLToPath } from 'node:url';
 import { db, transaction } from './db.js';
+import templateRoutes from './routes/templates.js';
 import { encrypt, ProviderError, verifyChannel } from './providers.js';
 
 const secret = process.env.JWT_SECRET;
@@ -73,7 +74,6 @@ const take = (result) => {
 
 const name = z.string().trim().min(1).max(80);
 const content = z.string().trim().min(1).max(4096);
-const template = z.object({ name, body: content });
 const channel = z.object({
   name, platform: z.enum(['telegram', 'instagram']),
   destination: z.string().trim().min(1).max(80),
@@ -81,29 +81,7 @@ const channel = z.object({
 }).refine(({ platform, destination }) => platform === 'telegram'
   ? /^(?:@[a-zA-Z0-9_]{5,32}|-100\d{5,20})$/.test(destination) : /^\d{5,30}$/.test(destination));
 
-app.get('/api/templates', async (req, res) => {
-  res.json((await db.query('SELECT id,name,body FROM templates WHERE user_id=$1 ORDER BY id DESC', [req.userId])).rows);
-});
-app.get('/api/templates/:id', async (req, res) => {
-  res.json(take(await db.query('SELECT id,name,body FROM templates WHERE id=$1 AND user_id=$2', [req.params.id, req.userId])));
-});
-app.post('/api/templates', fields(template), async (req, res) => {
-  const { name, body } = req.input;
-  res.status(201).json(take(await db.query(
-    'INSERT INTO templates(user_id,name,body) VALUES ($1,$2,$3) RETURNING id,name,body', [req.userId, name, body],
-  )));
-});
-app.put('/api/templates/:id', fields(template), async (req, res) => {
-  const { name, body } = req.input;
-  res.json(take(await db.query(
-    'UPDATE templates SET name=$1,body=$2 WHERE id=$3 AND user_id=$4 RETURNING id,name,body',
-    [name, body, req.params.id, req.userId],
-  )));
-});
-app.delete('/api/templates/:id', async (req, res) => {
-  take(await db.query('DELETE FROM templates WHERE id=$1 AND user_id=$2 RETURNING id', [req.params.id, req.userId]));
-  res.sendStatus(204);
-});
+app.use('/api/templates', templateRoutes);
 
 const channelColumns = 'id,name,platform,destination';
 app.get('/api/channels', async (req, res) => {
