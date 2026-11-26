@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, CalendarDays, FileText, Hash, LogOut, Plus, Search, X } from 'lucide-react';
-import '@fontsource-variable/manrope/wght.css';
+import { ArrowLeft, ArrowRight, CalendarDays, FileText, Hash, LogOut, Plus, Search, X, Eye, EyeOff } from 'lucide-react';
 import './style.css';
 
 const sections = {
@@ -85,6 +84,7 @@ function Auth({ onLogin, register }) {
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   async function submit(event) {
     event.preventDefault();
     const input = Object.fromEntries(new FormData(event.currentTarget));
@@ -103,16 +103,16 @@ function Auth({ onLogin, register }) {
     }
   }
   return <main className="auth">
-    <div className="authIntro"><Brand/>
-      <div><h1>Планировщик<br/>публикаций</h1><p>Черновики, шаблоны и отправка в подключённые каналы по расписанию.</p></div>
-    </div>
     <form className="authForm" onSubmit={submit}>
-      <h2>{register ? 'Создать аккаунт' : 'Вход'}</h2>
-      <label>Электронная почта<input type="email" autoComplete="email" name="email" required/></label>
-      <label>Пароль<input type="password" autoComplete={register ? 'new-password' : 'current-password'} name="password" minLength={8} required/></label>
+      <Brand/>
+      <div className="authHeading"><h1>{register ? 'Создать аккаунт' : 'С возвращением'}</h1>
+        <p>{register ? 'Зарегистрируйтесь, чтобы планировать публикации.' : 'Войдите в свой планировщик.'}</p></div>
+      <label>Электронная почта<input type="email" autoComplete="email" name="email" placeholder="name@example.com" required/></label>
+      <div className="passwordGroup"><label htmlFor="auth-password">Пароль</label><div className="passwordField"><input id="auth-password" type={showPassword ? 'text' : 'password'} autoComplete={register ? 'new-password' : 'current-password'} name="password" minLength={register ? 8 : undefined} placeholder={register ? 'Минимум 8 символов' : 'Введите пароль'} required/>
+        <button type="button" aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'} aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button></div></div>
       {error && <p className="error" role="alert">{error}</p>}
       <button className="primary" disabled={pending}>{pending ? 'Подождите…' : register ? 'Зарегистрироваться' : 'Войти'}</button>
-      <Link to={register ? '/login' : '/register'}>{register ? 'Уже есть аккаунт' : 'Создать аккаунт'}</Link>
+      <p className="authSwitch">{register ? 'Уже есть аккаунт?' : 'Нет аккаунта?'} <Link to={register ? '/login' : '/register'}>{register ? 'Войти' : 'Зарегистрироваться'}</Link></p>
     </form>
   </main>;
 }
@@ -144,8 +144,9 @@ function List({ kind }) {
     && (!status || row.status === status)
   ));
   return <section>
-    <header className="pageHeading"><h1>{meta.title}</h1>
+    <header className="pageHeading"><div><h1>{meta.title}</h1><p className="pageCount">{rows ? `${rows.length} ${kind === 'posts' ? 'в списке' : kind === 'channels' ? 'подключено' : 'в списке'}` : 'Загрузка…'}</p></div>
       <Link className="primary" to={'/' + kind + '/new'}><Plus size={18} aria-hidden="true"/> {meta.action}</Link></header>
+    {kind === 'posts' && <div className="statusTabs" role="group" aria-label="Фильтр публикаций">{[['','Все публикации'],['scheduled','Запланировано'],['draft','Черновики'],['published','Опубликовано']].map(([value,title]) => <button type="button" key={value} aria-pressed={status === value} onClick={() => setStatus(value)}>{title}</button>)}</div>}
     <div className="listPanel">
       <div className="filters"><div className="searchField"><Search size={17} aria-hidden="true"/>
         <input aria-label={meta.search} placeholder={meta.search} value={search} onChange={event => setSearch(event.target.value)}/>
@@ -161,7 +162,7 @@ function List({ kind }) {
           <span className="rowMeta">{row.scheduled_at ? <time dateTime={row.scheduled_at}>{day.format(new Date(row.scheduled_at))}<small>{clock.format(new Date(row.scheduled_at))}</small></time>
             : row.platform ? platforms[row.platform] : row.body.slice(0,55)}</span>
           <span className="rowEnd">{row.status && <Status status={row.status}/>}<ArrowRight size={16} aria-hidden="true"/></span></Link></li>)}</ul>
-      </> : <div className="empty"><strong>{search || status ? 'Совпадений нет' : meta.empty}</strong>
+      </> : <div className="empty"><span className="emptyIcon"><meta.icon size={28} strokeWidth={1.4}/></span><strong>{search || status ? 'Совпадений нет' : meta.empty}</strong>
         {(search || status) && <button className="quiet" type="button" onClick={() => { setSearch(''); setStatus(''); }}>Сбросить фильтры</button>}</div>}
     </div>
   </section>;
