@@ -55,7 +55,7 @@ nav a svg { stroke-width:1.7; }
 .statusTabs button[aria-pressed=true] { border-bottom-color:var(--ink); color:var(--ink); font-weight:600; }
 .listPanel { background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden; }
 .filters { display:flex; align-items:center; gap:12px; padding:17px 20px; }
-.filters input,.filters select { border:0; background:#f5f5f7; min-height:38px; font-size: var(--text-caption); padding-block:9px; border-radius:8px; }
+.filters input,.filters select { border:0; background-color:#f5f5f7; min-height:38px; font-size: var(--text-caption); padding-block:9px; border-radius:8px; }
 .filters select { width:auto; min-width:150px; margin-left:auto; }
 .searchField { position:relative; width:min(100%,310px); color:var(--muted); }
 .searchField > svg { position:absolute; left:11px; top:11px; pointer-events:none; }
@@ -147,3 +147,5 @@ select {
   .identity { position:static; margin:0; padding:0; }
   .identity .logout { min-height:42px; }
 }
+
+@media(max-width:760px) { nav a svg { display:none; } }
