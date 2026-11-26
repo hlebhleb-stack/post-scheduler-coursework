@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import newman from 'newman';
+import { checkAdmin } from './admin-api.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 if (!process.env.TEST_DATABASE_URL) throw new Error('Задай TEST_DATABASE_URL отдельной тестовой PostgreSQL');
@@ -37,6 +38,7 @@ try {
     workingDir:root, timeoutRequest:10000, reporters:['cli'],
   }, (error, result) => error ? reject(error) : resolve(result)));
   if (summary.run.failures.length) process.exitCode = 1;
+  else await checkAdmin(base, env.DATABASE_URL);
 } finally {
   server.kill('SIGTERM');
   await new Promise(resolve => {
