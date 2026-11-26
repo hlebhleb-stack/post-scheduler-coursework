@@ -50,9 +50,9 @@ nav a svg { stroke-width:1.7; }
 .workspace > section { max-width:1120px; margin-inline:auto; }
 .pageHeading { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:32px; }
 .pageCount { font-size: var(--text-caption); color:var(--muted); margin-top:8px; }
-.statusTabs { display:flex; gap:25px; overflow-x:auto; margin-bottom:22px; border-bottom:1px solid #dedee4; }
-.statusTabs button { border:0; border-bottom:2px solid transparent; background:transparent; padding:0 0 13px; font-size: var(--text-caption); white-space:nowrap; color:var(--muted); }
-.statusTabs button[aria-pressed=true] { border-bottom-color:var(--ink); color:var(--ink); font-weight:600; }
+
+
+
 .listPanel { background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden; }
 .filters { display:flex; align-items:center; gap:12px; padding:17px 20px; }
 .filters input,.filters select { border:0; background-color:#f5f5f7; min-height:38px; font-size: var(--text-caption); padding-block:9px; border-radius:8px; }
@@ -106,7 +106,7 @@ nav a svg { stroke-width:1.7; }
   nav { display:flex; gap:22px; padding-right:48px; }nav a { border-radius:0; min-height:46px; padding:8px 0 14px; font-size: var(--text-caption); border-bottom:2px solid transparent; }nav a.active { box-shadow:none; border-bottom-color:var(--accent); }
   .identity { position:absolute; right:20px; top:15px; padding:0; border:0; }.identity span { display:none; }.identity .logout { font-size: var(--text-caption); }
   .workspace { padding:32px 20px 48px; }h1 { font-size: var(--text-title); }.pageHeading { gap:15px; margin-bottom:25px; align-items:flex-start; }.pageHeading .primary { font-size: var(--text-caption); padding:10px 12px; }.pageHeading .primary svg { width:15px; }
-  .statusTabs { gap:23px; margin-bottom:18px; }.filters { padding:13px; flex-wrap:wrap; }.filters select { min-width:120px; flex:1; }.searchField { flex:1; min-width:160px; }.tableHead { display:none; }
+  .filters { padding:13px; flex-wrap:wrap; }.filters select { min-width:120px; flex:1; }.searchField { flex:1; min-width:160px; }.tableHead { display:none; }
   .rows { border-top:1px solid var(--line); }.rows a { grid-template-columns:minmax(0,1fr) auto; padding:19px 16px; gap:7px 12px; }.rowMeta { grid-row:2; font-size: var(--text-caption); }.rowMeta small { display:inline; margin-left:7px; }.rowEnd { grid-column:2; grid-row:1 / span 2; }.rowEnd > svg { display:none; }
   .formPanel { padding:22px; gap:24px; border-radius:14px; }.fieldRow { grid-template-columns:1fr; }.formPage .pageHeading { margin-bottom:25px; }.empty { padding:52px 16px; }
   .auth { padding:40px 24px; }.authForm { gap:22px; }
