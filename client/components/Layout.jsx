@@ -17,7 +17,7 @@ export default function Layout() {
     <nav aria-label="Разделы"><NavLink to="/overview"><LayoutDashboard size={18}/><span>Обзор</span></NavLink>{Object.entries(sections).map(([key, {title, icon: Icon}]) =>
       <NavLink key={key} to={'/' + key}><Icon size={18}/><span>{title}</span></NavLink>)}<NavLink to="/media"><Images size={18}/><span>Медиатека</span></NavLink>{session.role === 'admin' && <NavLink to="/admin"><Shield size={18}/><span>Администрирование</span></NavLink>}</nav>
     <div className="identity"><span title={session.email}>{session.email}</span><button type="button" className="quiet logout" onClick={logout} aria-label="Выйти"><LogOut size={17} aria-hidden="true"/><span>Выйти</span></button></div>
-  </aside><div className="mainArea"><div className="workspaceBar"><span>Планировщик</span><ChevronRight size={14}/><strong>{title}</strong><span className="barEmail">{session.email}</span></div><main className="workspace"><Routes>
+  </aside><div className="mainArea"><div className="workspaceBar"><span>Планировщик</span><ChevronRight size={14}/><strong>{title}</strong></div><main className="workspace"><Routes>
     <Route path="media" element={<MediaLibrary/>}/>
     <Route path="overview" element={<Dashboard/>}/>
     {Object.keys(sections).map(kind => <React.Fragment key={kind}>
