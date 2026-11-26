@@ -9,7 +9,9 @@
     "start": "node server/app.js",
     "worker": "node server/worker.js",
     "migrate": "node server/migrate.js",
-    "test:api": "node test/run-postman.mjs"
+    "test:api": "node test/run-postman.mjs",
+    "test": "node --test test/*.test.js",
+    "seed": "node server/scripts/seed.js"
   },
   "keywords": [],
   "author": "",

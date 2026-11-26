@@ -14,7 +14,7 @@ export async function request(path, options = {}) {
   if (result.status === 204) return null;
   const data = await result.json().catch(() => ({}));
   if (!result.ok) {
-    if (result.status === 401 && session && !path.startsWith('auth/')) {
+    if (result.status === 401 && session && !['auth/login','auth/register'].includes(path)) {
       sessionStorage.removeItem(sessionKey);
       window.dispatchEvent(new Event('session-expired'));
     }

@@ -89,3 +89,17 @@ docker compose -f docker-compose.neon.yml up --build -d
 ```sh
 docker compose -f docker-compose.neon.yml down
 ```
+
+## Демонстрационные данные и проверка требований
+
+Проверка требований и оставшиеся ограничения — в [docs/COURSEWORK-CODE-AUDIT.md](docs/COURSEWORK-CODE-AUDIT.md). Это техническая сверка, пояснительная записка пока не создаётся.
+
+Для воспроизводимой подготовки пользователя/администратора создайте приватный файл `.env.demo` с DATABASE_URL, CHANNEL_KEY, SEED_USER_EMAIL, SEED_ADMIN_EMAIL, SEED_USER_PASSWORD, SEED_ADMIN_PASSWORD. Пароли — от 8 до 72 байт, уникальные. Не публикуйте этот файл. После миграции:
+
+```sh
+node --env-file=.env.demo server/scripts/seed.js
+```
+
+По умолчанию имена student@coursework.local и admin@coursework.local; пароли по умолчанию отсутствуют. Повторный запуск обновляет пароли и роли именно этих email. Создаётся документ медиатеки; если заданы SEED_TELEGRAM_DESTINATION и SEED_TELEGRAM_TOKEN, дополнительно проверяется настоящий канал и создаётся черновик без отправки. Для рабочего пользователя используйте отдельные демонстрационные email. ИИ применялся при подготовке кода и проверок; владелец должен самостоятельно разобраться в реализации и отразить использование инструментов в будущей ПЗ.
+
+В CI `test.yml` выполняются unit-тесты, полная проверка API с отдельной PostgreSQL и сборка; `verify.yml` проверяет запуск Docker. Секреты рабочего проекта этим тестам не нужны.

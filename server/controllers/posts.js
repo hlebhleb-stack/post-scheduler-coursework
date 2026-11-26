@@ -51,6 +51,7 @@ attachments.get('/:id', async (req, res) => {
 });
 async function savePost(req, res) {
   const { channel_id, body, scheduled_at, status, silent, protect_content } = req.input;
+  // Пост и копии вложений сохраняются одной транзакцией.
   const result = await transaction(async client => {
     const channel = take(await client.query('SELECT platform FROM channels WHERE id=$1 AND user_id=$2 FOR KEY SHARE', [channel_id, req.userId]));
     if (status === 'scheduled' && Date.parse(scheduled_at) <= Date.now()) {

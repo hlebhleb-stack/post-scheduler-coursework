@@ -3,6 +3,9 @@ import { randomBytes } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import newman from 'newman';
+import {checkSecurity} from './security-api.mjs';
+import {checkSeed} from './seed-api.mjs';
+import {checkWorker} from './worker-api.mjs';
 import { checkAdmin } from './admin-api.mjs';
 import { checkAnalytics } from './analytics-api.mjs';
 import {checkYouTube} from './youtube-api.mjs';
@@ -47,6 +50,9 @@ try {
     await checkAnalytics(base, env.DATABASE_URL, env.JWT_SECRET);
     await checkMediaLibrary(base, env.DATABASE_URL, env.JWT_SECRET);
     await checkYouTube(base, env.DATABASE_URL, env.JWT_SECRET);
+    await checkSecurity(base,env.DATABASE_URL,env.JWT_SECRET);
+    await checkWorker(root,env);
+    await checkSeed(root,env);
   }
 } finally {
   server.kill('SIGTERM');

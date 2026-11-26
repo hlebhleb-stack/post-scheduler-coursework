@@ -14,6 +14,7 @@ const account = z.object({
 });
 router.post('/register', access, fields(account), async (req, res) => {
   const { email, password } = req.input;
+  // В базе сохраняется хеш пароля; исходный пароль не хранится.
   const hash = await bcrypt.hash(password, 12);
   const result = await db.query('INSERT INTO users(email,password_hash) VALUES ($1,$2) ON CONFLICT DO NOTHING RETURNING id', [email, hash]);
   if (!result.rowCount) throw Object.assign(error(409,'Этот адрес уже зарегистрирован'),{fields:{email:'Этот адрес уже зарегистрирован. Войдите в аккаунт'}});

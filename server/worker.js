@@ -7,6 +7,7 @@ async function claim() {
   return transaction(async client => {
     await client.query(`UPDATE posts SET status='uncertain',updated_at=now()
       WHERE status='publishing' AND updated_at < now() - interval '5 minutes'`);
+    // Блокировка строки исключает одновременную отправку двумя обработчиками.
     const { rows: [post] } = await client.query(`
       SELECT p.id,p.body,p.youtube_title,p.youtube_privacy,p.youtube_made_for_kids,p.telegram_html,p.silent,p.protect_content,c.platform,c.destination,c.credential
       FROM posts p JOIN channels c ON c.id=p.channel_id
@@ -28,6 +29,7 @@ async function processPost(post) {
     const { rows: attachments } = await db.query('SELECT * FROM attachments WHERE post_id=$1 ORDER BY position,id', [post.id]);
     externalId = await publish({ ...post, attachments });
   } catch (error) {
+    // При неизвестном результате повторная отправка может создать дубль.
     status = error instanceof ProviderError && error.definitive ? 'failed' : 'uncertain';
     message = error instanceof ProviderError ? error.message : 'Не удалось подтвердить результат отправки';
   }

@@ -19,7 +19,7 @@ export function RichText({ body, html, onChange, readOnly = false, limit = 4096,
     editorProps:{ attributes: { role:'textbox', 'aria-label':'Текст публикации', 'aria-multiline':'true' } },
     onUpdate: ({ editor }) => onChange?.({ body:editor.getText({ blockSeparator:'\n' }), html:editor.getHTML() }),
   });
-  // Templates and channel changes may replace the text outside the editor.
+  // При смене данных синхронизируем редактор с текстом публикации.
   useEffect(() => {
     if (editor && editor.getText({ blockSeparator:'\n' }) !== body) editor.commands.setContent(html || '<p>' + escape(body || '') + '</p>', { emitUpdate:false });
   }, [body, html, editor]);
