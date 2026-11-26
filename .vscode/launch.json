@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Сервер и обработчик публикаций",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/server/app.js",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Обработчик — один проход",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/server/worker.js",
+      "args": ["--once"],
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}
