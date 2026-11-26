@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "Собрать интерфейс", "type": "npm", "script": "build", "problemMatcher": [] },
+    { "label": "Проверить модульные тесты", "type": "npm", "script": "test", "problemMatcher": [] },
+    {
+      "label": "Проверить форматирование",
+      "type": "npm",
+      "script": "format:check",
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker + Neon — запустить сайт",
+      "type": "shell",
+      "command": "docker compose -f docker-compose.neon.yml up --build -d",
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker + Neon — остановить сайт",
+      "type": "shell",
+      "command": "docker compose -f docker-compose.neon.yml down",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -4,30 +4,36 @@ import youtube from '../controllers/youtube.js';
 import channels from '../controllers/channels.js';
 import posts, { attachments } from '../controllers/posts.js';
 import media from '../controllers/media.js';
-import admin from '../controllers/admin.js';
+import admin from '../controllers/admin/index.js';
 import analytics from '../controllers/analytics.js';
 import { authenticate } from '../middleware/auth.js';
 import { db } from '../db.js';
 import { error } from '../lib/http.js';
 const router = Router();
-router.get('/health', async (req,res) => { await db.query('SELECT 1'); res.json({status:'ok'}); });
+router.get('/health', async (req, res) => {
+  await db.query('SELECT 1');
+  res.json({ status: 'ok' });
+});
 router.use('/auth', auth);
-router.use('/youtube',youtube);
+router.use('/youtube', youtube);
 router.use(authenticate);
-router.get('/auth/me', async (req,res) => {
-  const {rows:[user]} = await db.query('SELECT email,role FROM users WHERE id=$1',[req.userId]);
-  if (!user) throw error(401,'Войди в аккаунт');
+router.get('/auth/me', async (req, res) => {
+  const {
+    rows: [user],
+  } = await db.query('SELECT email,role FROM users WHERE id=$1', [req.userId]);
+  if (!user) throw error(401, 'Войди в аккаунт');
   res.json(user);
 });
-router.param('id', (req,res,next,id) => {
-  if (!/^[1-9]\d*$/.test(id) || Number(id)>2147483647) return next(error(404,'Запись не найдена'));
+router.param('id', (req, res, next, id) => {
+  if (!/^[1-9]\d*$/.test(id) || Number(id) > 2147483647)
+    return next(error(404, 'Запись не найдена'));
   next();
 });
-router.use('/channels',channels);
-router.use('/posts',posts);
-router.use('/attachments',attachments);
-router.use('/media',media);
-router.use('/admin',admin);
-router.use('/analytics',analytics);
-router.use((req,res,next) => next(error(404,'Маршрут не найден')));
+router.use('/channels', channels);
+router.use('/posts', posts);
+router.use('/attachments', attachments);
+router.use('/media', media);
+router.use('/admin', admin);
+router.use('/analytics', analytics);
+router.use((req, res, next) => next(error(404, 'Маршрут не найден')));
 export default router;

@@ -6,9 +6,9 @@ services:
     image: coursework-scheduler-neon
     env_file: [.env.neon]
     environment:
-      PORT: "3000"
-      EMBEDDED_WORKER: "0"
-    ports: ["127.0.0.1:3000:3000"]
+      PORT: '3000'
+      EMBEDDED_WORKER: '0'
+    ports: ['127.0.0.1:3000:3000']
     command: [node, server/app.js]
   worker:
     image: coursework-scheduler-neon

@@ -25,8 +25,8 @@ services:
     env_file: [.env]
     command: [node, server/app.js]
     environment:
-      EMBEDDED_WORKER: "0"
-    ports: ["127.0.0.1:3000:3000"]
+      EMBEDDED_WORKER: '0'
+    ports: ['127.0.0.1:3000:3000']
     depends_on:
       migrate:
         condition: service_completed_successfully

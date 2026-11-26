@@ -2,23 +2,25 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Сервер и обработчик публикаций",
+      "name": "API — Neon, без отправки публикаций",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/server/app.js",
       "cwd": "${workspaceFolder}",
-      "envFile": "${workspaceFolder}/.env",
+      "envFile": "${workspaceFolder}/.env.neon",
+      "env": { "PORT": "3001", "EMBEDDED_WORKER": "0" },
+      "preLaunchTask": "Собрать интерфейс",
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"]
     },
     {
-      "name": "Обработчик — один проход",
+      "name": "Обработчик — Neon, реальная отправка, один проход",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/server/worker.js",
       "args": ["--once"],
       "cwd": "${workspaceFolder}",
-      "envFile": "${workspaceFolder}/.env",
+      "envFile": "${workspaceFolder}/.env.neon",
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"]
     }
