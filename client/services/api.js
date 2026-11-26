@@ -19,8 +19,8 @@ export async function request(path, options = {}) {
           : undefined,
   });
   if (result.status === 204) return null;
-  const data = await result.json().catch(() => ({}));
   if (!result.ok) {
+    const data = await result.json().catch(() => ({}));
     if (result.status === 401 && session && !['auth/login', 'auth/register'].includes(path)) {
       sessionStorage.removeItem(sessionKey);
       window.dispatchEvent(new Event('session-expired'));
@@ -29,5 +29,6 @@ export async function request(path, options = {}) {
       fields: data.fields || {},
     });
   }
-  return data;
+  if (options.response === 'blob') return result.blob();
+  return result.json().catch(() => ({}));
 }

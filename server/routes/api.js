@@ -24,11 +24,6 @@ router.get('/auth/me', async (req, res) => {
   if (!user) throw error(401, 'Войди в аккаунт');
   res.json(user);
 });
-router.param('id', (req, res, next, id) => {
-  if (!/^[1-9]\d*$/.test(id) || Number(id) > 2147483647)
-    return next(error(404, 'Запись не найдена'));
-  next();
-});
 router.use('/channels', channels);
 router.use('/posts', posts);
 router.use('/attachments', attachments);

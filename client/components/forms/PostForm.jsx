@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { platforms } from '../../config.js';
 import { request } from '../../services/api.js';
 import { localDateTime } from '../../lib/format.js';
+import { mediaError, mediaKind } from '../../lib/media.js';
 import { FormField, FieldError, validateForm, focusFirstError } from '../FormField.jsx';
 import { MediaSelector } from '../MediaSelector.jsx';
 import { RichText } from '../editor/RichText.jsx';
@@ -24,31 +25,23 @@ export function PostForm({ data, channels = [] }) {
   const objectURLs = useRef([]);
   useEffect(() => () => objectURLs.current.forEach((url) => URL.revokeObjectURL(url)), []);
   function addFiles(files) {
-    if (
-      currentChannel?.platform === 'youtube' &&
-      (attachments.length + files.length !== 1 ||
-        files.some((file) => file.type !== 'video/mp4' || !/\.mp4$/i.test(file.name)))
-    ) {
-      setError('Для YouTube выберите одно MP4-видео до 50 МБ');
+    const prepared = files.map((file) => ({
+      file,
+      name: file.name,
+      mime: file.type,
+      size: file.size,
+      kind: mediaKind(file),
+    }));
+    const problem = mediaError([...attachments, ...prepared], currentChannel?.platform);
+    if (problem) {
+      setError(problem);
       return;
     }
-    if (
-      attachments.length + files.length > 10 ||
-      [...attachments, ...files].reduce((sum, file) => sum + file.size, 0) > 50 * 1024 * 1024
-    ) {
-      setError('До 10 файлов общим размером до 50 МБ');
-      return;
-    }
-    const added = files.map((file) => {
-      const ext = file.name.split('.').pop().toLowerCase();
-      let kind = 'document';
-      if (['jpg', 'jpeg', 'png'].includes(ext) && file.type.startsWith('image/')) kind = 'photo';
-      if (ext === 'gif' && file.type === 'image/gif') kind = 'animation';
-      if (ext === 'mp4' && file.type === 'video/mp4') kind = 'video';
-      if (['mp3', 'm4a'].includes(ext) && file.type.startsWith('audio/')) kind = 'audio';
+    const added = prepared.map((item) => {
+      const { file } = item;
       const url = URL.createObjectURL(file);
       objectURLs.current.push(url);
-      return { file, name: file.name, mime: file.type, size: file.size, kind, url };
+      return { ...item, url };
     });
     setAttachments([...attachments, ...added]);
     setError('');
@@ -204,21 +197,13 @@ export function PostForm({ data, channels = [] }) {
           <MediaSelector
             selectedIds={attachments.filter((file) => file.media_id).map((file) => file.media_id)}
             onSelect={(file) => {
-              if (
-                currentChannel?.platform === 'youtube' &&
-                (attachments.length || file.kind !== 'video' || file.mime !== 'video/mp4')
-              ) {
-                setError('Для YouTube выберите одно MP4-видео до 50 МБ');
+              const selected = { ...file, media_id: file.id };
+              const problem = mediaError([...attachments, selected], currentChannel?.platform);
+              if (problem) {
+                setError(problem);
                 return;
               }
-              if (
-                attachments.length >= 10 ||
-                attachments.reduce((sum, item) => sum + item.size, 0) + file.size > 50 * 1024 * 1024
-              ) {
-                setError('До 10 файлов общим размером до 50 МБ');
-                return;
-              }
-              setAttachments([...attachments, { ...file, media_id: file.id }]);
+              setAttachments([...attachments, selected]);
               setError('');
             }}
           />

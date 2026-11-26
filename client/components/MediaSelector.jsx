@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useData } from '../hooks/useData.js';
 import { Feedback } from './Common.jsx';
+import { fileSize } from '../lib/format.js';
 export function MediaSelector({ selectedIds, onSelect }) {
   const [open, setOpen] = useState(false);
   return (
@@ -32,11 +33,7 @@ function MediaOptions({ selectedIds, onSelect }) {
             onClick={() => onSelect(file)}
           >
             <span>{file.name}</span>
-            <small>
-              {selectedIds.includes(file.id)
-                ? 'Добавлено'
-                : (file.size / 1024 / 1024).toFixed(1) + ' МБ'}
-            </small>
+            <small>{selectedIds.includes(file.id) ? 'Добавлено' : fileSize(file.size)}</small>
           </button>
         ))
       ) : (

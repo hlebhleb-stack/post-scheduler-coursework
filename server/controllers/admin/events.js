@@ -1,8 +1,7 @@
 import { Router } from 'express';
 
-import { filters, list, where, validateId } from './helpers.js';
+import { filters, list, where } from './helpers.js';
 const router = Router();
-router.param('id', validateId);
 
 router.get('/', async (req, res) => {
   const filter = filters(req);

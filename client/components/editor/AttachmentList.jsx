@@ -1,20 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { X, File, Music, Film, Image, Download } from 'lucide-react';
+import { request } from '../../services/api.js';
+import { fileSize } from '../../lib/format.js';
 
 function SavedPreview({ file }) {
   const [url, setUrl] = useState('');
   useEffect(() => {
     const controller = new AbortController();
     let objectURL;
-    const session = JSON.parse(sessionStorage.getItem('schedule-session') || 'null');
-    fetch('/api/attachments/' + file.id, {
-      headers: { Authorization: 'Bearer ' + session?.token },
+    request('attachments/' + file.id, {
       signal: controller.signal,
+      response: 'blob',
     })
-      .then((response) => {
-        if (!response.ok) throw new Error();
-        return response.blob();
-      })
       .then((blob) => {
         objectURL = URL.createObjectURL(new Blob([blob], { type: file.mime }));
         setUrl(objectURL);
@@ -40,12 +37,8 @@ export function AttachmentList({ files, onRemove }) {
   async function download(file) {
     setError('');
     try {
-      const session = JSON.parse(sessionStorage.getItem('schedule-session') || 'null');
-      const response = await fetch('/api/attachments/' + file.id, {
-        headers: { Authorization: 'Bearer ' + session?.token },
-      });
-      if (!response.ok) throw new Error();
-      const url = URL.createObjectURL(await response.blob());
+      const blob = await request('attachments/' + file.id, { response: 'blob' });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = file.name;
@@ -72,7 +65,7 @@ export function AttachmentList({ files, onRemove }) {
               <span>
                 <strong>{file.name}</strong>
                 <small>
-                  {(file.size / 1024 / 1024).toFixed(1)} МБ ·{' '}
+                  {fileSize(file.size)} ·{' '}
                   {file.kind === 'document'
                     ? 'Файл'
                     : { photo: 'Фото', video: 'Видео', audio: 'Музыка', animation: 'GIF' }[

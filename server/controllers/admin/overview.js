@@ -2,9 +2,7 @@ import { Router } from 'express';
 
 import { db } from '../../db.js';
 
-import { validateId } from './helpers.js';
 const router = Router();
-router.param('id', validateId);
 
 router.get('/', async (req, res) => {
   const {

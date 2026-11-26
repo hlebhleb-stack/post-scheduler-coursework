@@ -4,6 +4,7 @@ import { Upload, FolderOpen } from 'lucide-react';
 import { request } from '../services/api.js';
 import { FormField } from '../components/FormField.jsx';
 import { AttachmentList } from '../components/editor/AttachmentList.jsx';
+import { mediaError } from '../lib/media.js';
 export default function MediaLibrary() {
   const [files, setFiles] = useState(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -24,26 +25,9 @@ export default function MediaLibrary() {
   }, [loadAttempt]);
   async function upload(selected) {
     if (!selected.length) return;
-    const oversized = selected.find((file) => file.size > 50 * 1024 * 1024);
-    if (oversized) {
-      setError('Файл «' + oversized.name + '» превышает 50 МБ');
-      return;
-    }
-    const largePhoto = selected.find(
-      (file) =>
-        /\.(jpe?g|png)$/i.test(file.name) &&
-        file.type.startsWith('image/') &&
-        file.size > 10 * 1024 * 1024,
-    );
-    if (largePhoto) {
-      setError('Фото «' + largePhoto.name + '» превышает 10 МБ');
-      return;
-    }
-    if (
-      selected.length > 10 ||
-      selected.reduce((sum, file) => sum + file.size, 0) > 50 * 1024 * 1024
-    ) {
-      setError('Выберите до 10 файлов общим размером до 50 МБ');
+    const problem = mediaError(selected);
+    if (problem) {
+      setError(problem);
       return;
     }
     setPending(true);

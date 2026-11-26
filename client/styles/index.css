@@ -14,6 +14,8 @@
   --text-heading: 20px;
   --text-body: 16px;
   --text-caption: 13px;
+  --radius-control: 8px;
+  --radius-surface: 12px;
   font-size: var(--text-body);
 }
 * {
@@ -268,7 +270,7 @@ nav a svg {
   font-size: var(--text-caption);
   font-weight: 600;
   color: var(--muted);
-  border-block: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 .tableHead > :last-child {
   text-align: right;
@@ -279,7 +281,7 @@ nav a svg {
   list-style: none;
 }
 .rows li + li {
-  border-top: 1px solid #f0f0f3;
+  border-top: 1px solid var(--line);
 }
 .rows a {
   min-height: 87px;
@@ -314,9 +316,6 @@ nav a svg {
   justify-content: flex-end;
   gap: 18px;
   color: #a0a0a6;
-}
-.rowEnd > svg {
-  width: 14px;
 }
 .status {
   display: inline-flex;
@@ -510,10 +509,6 @@ select {
   background-position: right 14px center;
   background-size: 16px 16px;
 }
-.filters select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236e6e73' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  padding-right: 44px;
-}
 @media (forced-colors: active) {
   select,
   .filters select {
@@ -692,11 +687,9 @@ tg-spoiler {
 
 /* Нейтральная рабочая область и календарь по референсам пользователя. */
 .shell {
-  grid-template-columns: 210px minmax(0, 1fr);
   background: white;
 }
 .sidebar {
-  top: 17px;
   padding: 28px 14px 18px;
   background: #fff;
   border-right: 1px solid #e9e9ed;
@@ -707,12 +700,6 @@ nav a {
   font-weight: 500;
   gap: 10px;
   min-height: 42px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-}
-nav a.active {
-  border-color: #e2e2e7;
-  background: #fff;
 }
 .identity {
   border-color: #e9e9ed;
@@ -786,12 +773,10 @@ textarea {
   align-items: flex-start;
   gap: 10px;
   padding: 0 24px;
-  border-left: 1px solid var(--line);
   min-width: 0;
 }
 .metric:first-child {
   padding-left: 0;
-  border-left: 0;
 }
 .metricLabel {
   display: flex;
@@ -931,9 +916,6 @@ textarea {
   color: #242329;
 }
 @media (max-width: 1050px) {
-  .shell {
-    grid-template-columns: 180px minmax(0, 1fr);
-  }
   .workspace {
     padding-inline: 24px;
   }
@@ -942,39 +924,6 @@ textarea {
   }
 }
 @media (max-width: 760px) {
-  .sidebar {
-    padding: 12px 16px 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px;
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-    background: #fff;
-  }
-  nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-  nav a {
-    padding: 8px;
-    min-height: 38px;
-  }
-  nav a svg {
-    display: none;
-  }
-  .identity {
-    position: static;
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-  .identity span {
-    display: none;
-  }
-  .identity .logout {
-    padding: 8px 0;
-  }
   .workspace {
     padding: 26px 20px 40px;
   }
@@ -994,7 +943,6 @@ textarea {
   }
   .metric:nth-child(3) {
     padding-left: 0;
-    border-left: 0;
   }
   .sectionHeading {
     flex-wrap: wrap;
@@ -1033,9 +981,6 @@ textarea {
   .rowEnd {
     grid-column: 2;
     grid-row: 1 / span 2;
-  }
-  .rowEnd > svg {
-    display: none;
   }
   .fieldRow {
     grid-template-columns: 1fr;
@@ -1080,15 +1025,10 @@ textarea {
   line-height: 1;
 }
 body {
-  padding: 0;
   background: #fff;
 }
 .shell {
-  display: block;
   min-height: 100dvh;
-  border: 0;
-  border-radius: 0;
-  overflow: visible;
 }
 .sidebar {
   position: fixed;
@@ -1216,6 +1156,7 @@ body {
   .sidebar nav a {
     justify-content: center;
     padding: 10px;
+    min-height: 38px;
   }
   .sidebar nav a svg {
     display: block;
@@ -1231,7 +1172,10 @@ body {
     clip-path: inset(50%);
   }
   .sidebar .identity {
-    margin-top: auto;
+    position: static;
+    margin: auto 0 0;
+    padding: 0;
+    border: 0;
   }
   .sidebar .identity span {
     display: none;
@@ -1239,6 +1183,7 @@ body {
   .sidebar .logout {
     width: 42px;
     justify-content: center;
+    padding: 8px 0;
   }
   .sidebar .logout svg {
     display: block;
@@ -1295,52 +1240,19 @@ input:-webkit-autofill:focus {
 .compactHeading .pageCount {
   margin: 0;
 }
-.listPanel {
-  border: 0;
-  border-radius: 0;
-  overflow: visible;
-}
 .filters {
   padding: 0 0 20px;
 }
 .tableHead {
-  background: transparent;
-  border-top: 0;
-  border-bottom: 1px solid var(--line);
   padding-inline: 12px;
 }
 .rows a {
   padding-inline: 12px;
 }
-.rows li + li {
-  border-color: var(--line);
-}
-.sidebar nav a {
-  border: 0;
-  box-shadow: none;
-}
-.sidebar nav a.active {
-  border: 0;
-  box-shadow: none;
-  background: #fff;
-  outline: 1px solid #d2d2d7;
-  outline-offset: -1px;
-}
-
-.formPanel {
-  border: 0;
-  padding: 0;
-  border-radius: 0;
-}
 .attachment {
-  border: 0;
-  background: var(--wash);
-}
-.libraryItem .attachment {
   background: var(--wash);
 }
 .richField {
-  border: 0;
   background: #f6f6f8;
 }
 .formatTools {
@@ -1350,9 +1262,6 @@ input:-webkit-autofill:focus {
 .libraryGrid {
   gap: 28px;
 }
-.metrics .metric {
-  border-left: 0;
-}
 @media (max-width: 760px) {
   .compactHeading {
     align-items: flex-start;
@@ -1360,9 +1269,6 @@ input:-webkit-autofill:focus {
   }
   .filters {
     padding: 0 0 18px;
-  }
-  .formPanel {
-    padding: 0;
   }
 }
 .formField {
@@ -1408,10 +1314,6 @@ textarea[aria-invalid='true'] {
   }
 }
 
-:root {
-  --radius-control: 8px;
-  --radius-surface: 12px;
-}
 .primary,
 .secondary,
 .quiet,
