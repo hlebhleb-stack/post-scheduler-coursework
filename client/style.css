@@ -113,3 +113,9 @@ nav a svg { stroke-width:1.7; }
 @media(prefers-reduced-motion:no-preference) { button,a,input,textarea,select { transition:background-color .15s,border-color .15s; } }
 
 .passwordGroup { display:grid; gap:8px; }
+@media(max-width:760px) {
+  nav a { border-bottom:2px solid transparent; }
+  nav a.active { border-bottom-color:var(--accent); }
+  .pageHeading { flex-wrap:wrap; }
+  .pageHeading > div { flex-basis:100%; }
+}
