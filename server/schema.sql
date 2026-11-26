@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS channels (
   id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id integer NOT NULL REFERENCES users(id),
   name text NOT NULL,
-  platform text NOT NULL CHECK (platform IN ('telegram','instagram')),
+  platform text NOT NULL CHECK (platform IN ('telegram','instagram','youtube')),
   destination text NOT NULL,
   credential text NOT NULL,
   UNIQUE(id, user_id),
@@ -57,3 +57,10 @@ CREATE INDEX IF NOT EXISTS attachments_post ON attachments(post_id);
 ALTER TABLE attachments ALTER COLUMN post_id DROP NOT NULL;
 ALTER TABLE attachments ADD COLUMN IF NOT EXISTS user_id integer REFERENCES users(id);
 CREATE INDEX IF NOT EXISTS media_owner ON attachments(user_id) WHERE post_id IS NULL;
+
+-- Миграция сохраняет существующие каналы и публикации.
+ALTER TABLE channels DROP CONSTRAINT IF EXISTS channels_platform_check;
+ALTER TABLE channels ADD CONSTRAINT channels_platform_check CHECK (platform IN ('telegram','instagram','youtube'));
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS youtube_title text;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS youtube_privacy text NOT NULL DEFAULT 'unlisted' CHECK (youtube_privacy IN ('private','unlisted','public'));
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS youtube_made_for_kids boolean NOT NULL DEFAULT false;

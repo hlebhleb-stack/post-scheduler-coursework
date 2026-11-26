@@ -1,3 +1,4 @@
+import { publishYouTube, YouTubeError } from './youtube.js';
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
 function key() {
@@ -107,6 +108,10 @@ export async function verifyChannel(platform, destination, token) {
 
 export async function publish(post) {
   const token = decrypt(post.credential);
+  if (post.platform === 'youtube') {
+    try { return await publishYouTube(post, token); }
+    catch (err) { if (err instanceof YouTubeError) throw new ProviderError(err.message,err.definitive); throw err; }
+  }
   if (post.platform === 'telegram') {
     const files = post.attachments || [];
     const options = { chat_id: post.destination, disable_notification: Boolean(post.silent), protect_content: Boolean(post.protect_content) };

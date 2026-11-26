@@ -27,3 +27,6 @@ jobs:
           DATABASE_URL: ${{ secrets.SCHEDULER_DATABASE_URL }}
           CHANNEL_KEY: ${{ secrets.SCHEDULER_CHANNEL_KEY }}
           INSTAGRAM_API_VERSION: ${{ vars.INSTAGRAM_API_VERSION }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REDIRECT_URI: ${{ vars.YOUTUBE_REDIRECT_URI }}

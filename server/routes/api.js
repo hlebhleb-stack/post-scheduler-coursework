@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import auth from '../controllers/auth.js';
+import youtube from '../controllers/youtube.js';
 import channels from '../controllers/channels.js';
 import posts, { attachments } from '../controllers/posts.js';
 import media from '../controllers/media.js';
@@ -11,6 +12,7 @@ import { error } from '../lib/http.js';
 const router = Router();
 router.get('/health', async (req,res) => { await db.query('SELECT 1'); res.json({status:'ok'}); });
 router.use('/auth', auth);
+router.use('/youtube',youtube);
 router.use(authenticate);
 router.get('/auth/me', async (req,res) => {
   const {rows:[user]} = await db.query('SELECT email,role FROM users WHERE id=$1',[req.userId]);

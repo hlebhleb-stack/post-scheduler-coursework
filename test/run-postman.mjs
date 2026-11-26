@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import newman from 'newman';
 import { checkAdmin } from './admin-api.mjs';
 import { checkAnalytics } from './analytics-api.mjs';
+import {checkYouTube} from './youtube-api.mjs';
 import { checkMediaLibrary } from './media-library-api.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -15,6 +16,7 @@ const env = {
   ...process.env, DATABASE_URL:process.env.TEST_DATABASE_URL,
   JWT_SECRET:randomBytes(32).toString('hex'), CHANNEL_KEY:randomBytes(32).toString('base64'),
   EMBEDDED_WORKER:'0', PORT:port,
+  YOUTUBE_CLIENT_ID:'test-client',YOUTUBE_CLIENT_SECRET:'test-secret',YOUTUBE_REDIRECT_URI:base+'/api/youtube/callback',
 };
 const migration = spawnSync(process.execPath, ['server/migrate.js'], { cwd:root, env, stdio:'inherit' });
 if (migration.status !== 0) process.exit(1);
@@ -44,6 +46,7 @@ try {
     await checkAdmin(base, env.DATABASE_URL);
     await checkAnalytics(base, env.DATABASE_URL, env.JWT_SECRET);
     await checkMediaLibrary(base, env.DATABASE_URL, env.JWT_SECRET);
+    await checkYouTube(base, env.DATABASE_URL, env.JWT_SECRET);
   }
 } finally {
   server.kill('SIGTERM');

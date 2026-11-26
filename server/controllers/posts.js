@@ -12,7 +12,10 @@ import { readFile } from 'node:fs/promises';
 import { postUpload, mediaKind, telegramText, maxUploadBytes, uploadName } from '../media.js';
 const post = z.object({
   channel_id: z.number().int().positive().max(2147483647),
-  body: z.string().trim().max(4096),
+  body: z.string().trim().max(5000),
+  youtube_title: z.string().trim().max(100).default(''),
+  youtube_privacy: z.enum(['private','unlisted','public']).default('unlisted'),
+  youtube_made_for_kids: z.boolean().default(false),
   telegram_html: z.string().max(50000).nullish(),
   silent: z.boolean().default(false),
   protect_content: z.boolean().default(false),
@@ -64,7 +67,7 @@ async function savePost(req, res) {
         throw error(409, 'Текущий статус не позволяет изменить или повторно отправить публикацию');
       }
     }
-    const existing = current ? (await client.query('SELECT id,kind,size FROM attachments WHERE post_id=$1 ORDER BY position,id', [req.params.id])).rows : [];
+    const existing = current ? (await client.query('SELECT id,kind,mime,size FROM attachments WHERE post_id=$1 ORDER BY position,id', [req.params.id])).rows : [];
     const keepIds = req.input.attachment_ids || existing.map(file => file.id);
     if (keepIds.some(id => !existing.some(file => file.id === id)) || new Set(keepIds).size !== keepIds.length) throw error(400, 'Недоступное вложение');
     const kept = existing.filter(file => keepIds.includes(file.id));
@@ -79,8 +82,14 @@ async function savePost(req, res) {
     if (all.length > 10 || all.reduce((sum, file) => sum + file.size, 0) > maxUploadBytes) throw error(400, 'До 10 вложений общим размером до 50 МБ');
     if (files.some(file => file.size === 0 || (file.kind === 'photo' && file.size > 10 * 1024 * 1024))) throw error(400, 'Фото — до 10 МБ. Пустые файлы не поддерживаются');
     if (!body && !all.length) throw Object.assign(error(400,'Добавьте текст или вложение'),{fields:{body:'Напишите текст или прикрепите файл'}});
-    if (all.length && channel.platform !== 'telegram') throw error(400, 'Загрузка файлов доступна для Telegram');
-    if (all.length && body.length > 1024) throw Object.assign(error(400,'Подпись к вложению — до 1024 символов'),{fields:{body:'Сократите подпись до 1024 символов'}});
+    if (channel.platform === 'youtube') {
+      if (!req.input.youtube_title || /[<>]/.test(req.input.youtube_title)) throw Object.assign(error(400,'Проверьте название видео'),{fields:{youtube_title:'Введите название до 100 символов без знаков < и >'}});
+      if (all.length !== 1 || all[0].kind !== 'video' || (all[0].mime || all[0].mimetype) !== 'video/mp4') throw error(400,'Прикрепите одно MP4-видео размером до 50 МБ');
+      if (/[<>]/.test(body)) throw Object.assign(error(400,'Проверьте описание'),{fields:{body:'YouTube не допускает знаки < и > в описании'}});
+    }
+    if (channel.platform === 'telegram' && body.length > (all.length ? 1024 : 4096)) throw Object.assign(error(400,'Слишком длинный текст Telegram'),{fields:{body:all.length?'Подпись к вложению — до 1024 символов':'Текст Telegram — до 4096 символов'}});
+    if (all.length && !['telegram','youtube'].includes(channel.platform)) throw error(400, 'Загрузка файлов доступна для Telegram');
+    if (channel.platform === 'telegram' && all.length && body.length > 1024) throw Object.assign(error(400,'Подпись к вложению — до 1024 символов'),{fields:{body:'Сократите подпись до 1024 символов'}});
     if (all.length > 1) {
       const family = item => ['photo','video'].includes(item.kind) ? 'visual' : item.kind;
       if (all.some(item => family(item) !== family(all[0])) || all.some(item => item.kind === 'animation')) throw error(400, 'Альбом может содержать фото и видео вместе, только музыку или только документы. GIF отправляется отдельно');
@@ -93,6 +102,7 @@ async function savePost(req, res) {
       'INSERT INTO posts(channel_id,body,image_url,scheduled_at,status,user_id,telegram_html,silent,protect_content) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id', values,
     );
     const postId = saved.rows[0].id;
+    await client.query('UPDATE posts SET youtube_title=$1,youtube_privacy=$2,youtube_made_for_kids=$3 WHERE id=$4',[channel.platform === 'youtube' ? req.input.youtube_title : null,req.input.youtube_privacy,req.input.youtube_made_for_kids,postId]);
     await client.query('DELETE FROM attachments WHERE post_id=$1 AND NOT (id=ANY($2::int[]))', [postId, keepIds]);
     for (const [index, file] of files.entries()) {
       await client.query('INSERT INTO attachments(post_id,name,mime,kind,content,size,position) VALUES ($1,$2,$3,$4,$5,$6,$7)',

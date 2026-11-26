@@ -26,10 +26,11 @@ export default function Detail({ kind }) {
     }
   }
   return <section className="formPage"><Back kind={kind}/>{!data ? <Feedback result={result}/> : <>
-    <header className="pageHeading"><div><h1>{data.name || 'Публикация'}</h1>{data.status && <Status status={data.status}/>}</div></header>
+    <header className="pageHeading"><div><h1>{data.name || data.youtube_title || 'Публикация'}</h1>{data.status && <Status status={data.status}/>}</div></header>
     <div className="formPanel detail">
       {data.telegram_html ? <RichText body={data.body} html={data.telegram_html} readOnly/> : data.body && <p className="bodyText">{data.body}</p>}
       {data.attachments?.length > 0 && <AttachmentList files={data.attachments}/>}
+      {data.platform === 'youtube' && kind === 'posts' && <p className="muted">Доступ: {{unlisted:'по ссылке',private:'только мне',public:'для всех'}[data.youtube_privacy]}. После загрузки YouTube обрабатывает видео.</p>}
       {data.silent && <p className="muted">Без звука</p>}
       {data.protect_content && <p className="muted">Защита от копирования включена</p>}
       {data.platform && <dl><dt>Платформа</dt><dd>{platforms[data.platform]}</dd>
@@ -38,6 +39,7 @@ export default function Detail({ kind }) {
         {data.scheduled_at && <><dt>Время</dt><dd>{time(data.scheduled_at)}</dd></>}</dl>}
       {data.deliveries?.length > 0 && <div className="delivery"><h2>История отправки</h2>
         {data.deliveries.map((item, index) => <p key={index}>{time(item.attempted_at)} · {item.external_id ? 'ID: ' + item.external_id : item.error || 'Ответ не подтверждён'}</p>)}</div>}
+      {data.platform === 'youtube' && data.deliveries?.some(item=>item.external_id) && <a className="quiet" target="_blank" rel="noopener noreferrer" href={'https://www.youtube.com/watch?v='+encodeURIComponent(data.deliveries.find(item=>item.external_id).external_id)}>Открыть видео на YouTube</a>}
       {data.status === 'uncertain' && <p>Проверь платформу перед созданием повторной публикации.</p>}
       {error && <p role="alert" className="error">{error}</p>}
       <div className="actions">

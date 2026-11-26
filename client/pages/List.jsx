@@ -10,7 +10,7 @@ export default function List({ kind }) {
   const [status, setStatus] = useState('');
   const meta = sections[kind];
   const rows = result.data?.filter(row => (
-    (row.name || row.body).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
+    (row.name || row.youtube_title || row.body).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
     && (!status || row.status === status)
   ));
   return <section aria-label={meta.title}>
@@ -28,7 +28,7 @@ export default function List({ kind }) {
       {!rows ? <div className="empty"><Feedback result={result}/></div> : rows.length ? <>
         <div className="tableHead"><span>{kind === 'posts' ? 'Публикация' : 'Название'}</span><span>{kind === 'posts' ? 'Дата и время' : kind === 'channels' ? 'Платформа' : 'Текст'}</span><span>{kind === 'posts' ? 'Статус' : ''}</span></div>
         <ul className="rows">{rows.map(row => <li key={row.id}><Link to={'/' + kind + '/' + row.id}>
-          <span className="rowTitle"><strong>{row.name || row.body.slice(0, 90) || row.attachments?.[0]?.name || 'Вложение'}</strong>{row.channel_name && <small>{row.channel_name}</small>}</span>
+          <span className="rowTitle"><strong>{row.name || row.youtube_title || row.body.slice(0, 90) || row.attachments?.[0]?.name || 'Вложение'}</strong>{row.channel_name && <small>{row.channel_name}</small>}</span>
           <span className="rowMeta">{row.scheduled_at ? <time dateTime={row.scheduled_at}>{day.format(new Date(row.scheduled_at))}<small>{clock.format(new Date(row.scheduled_at))}</small></time>
             : row.platform ? platforms[row.platform] : row.body.slice(0,55)}</span>
           <span className="rowEnd">{row.status && <Status status={row.status}/>}</span></Link></li>)}</ul>

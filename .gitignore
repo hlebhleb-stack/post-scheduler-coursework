@@ -4,3 +4,7 @@ dist/
 .env.*
 !.env.example
 .DS_Store
+
+# Google OAuth credentials stay outside source control.
+client_secret*.json
+*-youtube-oauth.json

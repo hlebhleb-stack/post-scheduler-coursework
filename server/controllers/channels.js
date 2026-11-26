@@ -12,7 +12,7 @@ import { access } from '../middleware/rate-limit.js';
 import { encrypt, verifyChannel, ProviderError } from '../providers.js';
 const name = z.string().trim().min(1).max(80);
 const channel = z.object({
-  name, platform: z.enum(['telegram', 'instagram']),
+  name, platform: z.enum(['telegram', 'instagram', 'youtube']),
   destination: z.string().trim().min(1).max(80),
   token: z.string().trim().min(1).max(2048).optional(),
 })
@@ -43,6 +43,7 @@ router.get('/:id', async (req, res) => {
 });
 router.post('', access, fields(channel), async (req, res) => {
   const { name, platform, destination, token } = req.input;
+  if (platform === 'youtube') throw error(400,'Подключите YouTube кнопкой через Google');
   if (!token) throw Object.assign(error(400,'Для подключения нужен токен'),{fields:{token:'Введите токен бота или аккаунта'}});
   const verified = await checkChannel(platform, destination, token);
   res.status(201).json(take(await db.query(
@@ -56,6 +57,7 @@ router.put('/:id', access, fields(channel), async (req, res) => {
   if (current.platform !== platform || current.destination !== destination) {
     throw error(409, 'Для другого получателя создай отдельный канал');
   }
+  if (platform === 'youtube' && token) throw error(400,'Обновите доступ YouTube кнопкой через Google');
   if (token) await checkChannel(platform, destination, token);
   res.json(take(await db.query(
     `UPDATE channels SET name=$1,credential=COALESCE($2,credential) WHERE id=$3 AND user_id=$4 RETURNING ${channelColumns}`,
