@@ -20,6 +20,10 @@ export async function checkWorker(root,env) {
       ids[body]=(await db.query("INSERT INTO posts(user_id,channel_id,body,status,scheduled_at,updated_at) VALUES ($1,$2,$3,$4,now()+$5*interval '1 minute',now()+$5*interval '1 minute') RETURNING id",[userId,channel,body,status,time])).rows[0].id;
     }
     // Два независимых процесса одновременно читают одну очередь PostgreSQL.
+    await db.query('UPDATE users SET blocked=true WHERE id=$1',[userId]);
+    await run();
+    assert.equal((await db.query("SELECT count(*)::int AS n FROM posts WHERE user_id=$1 AND status='scheduled'",[userId])).rows[0].n,4);
+    await db.query('UPDATE users SET blocked=false WHERE id=$1',[userId]);
     await Promise.all([run(),run()]);
     const rows=(await db.query(`SELECT p.body,p.status,count(d.id)::int AS attempts,max(d.external_id) AS external_id
       FROM posts p LEFT JOIN deliveries d ON d.post_id=p.id WHERE p.user_id=$1 GROUP BY p.id`,[userId])).rows;

@@ -65,3 +65,16 @@ ALTER TABLE posts ADD COLUMN IF NOT EXISTS youtube_privacy text NOT NULL DEFAULT
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS youtube_made_for_kids boolean NOT NULL DEFAULT false;
 
 ALTER TABLE posts DROP COLUMN IF EXISTS image_url;
+
+-- Блокировка закрывает доступ и приостанавливает очередь пользователя.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS blocked boolean NOT NULL DEFAULT false;
+CREATE TABLE IF NOT EXISTS admin_events (
+  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  actor_id integer REFERENCES users(id) ON DELETE SET NULL,
+  action text NOT NULL,
+  resource text NOT NULL,
+  resource_id integer NOT NULL,
+  details jsonb NOT NULL DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS admin_events_created ON admin_events(created_at DESC,id DESC);

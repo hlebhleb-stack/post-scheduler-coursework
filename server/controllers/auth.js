@@ -22,8 +22,9 @@ router.post('/register', access, fields(account), async (req, res) => {
 });
 router.post('/login', access, fields(account), async (req, res) => {
   const { email, password } = req.input;
-  const { rows: [user] } = await db.query('SELECT id,email,role,password_hash FROM users WHERE email=$1', [email]);
+  const { rows: [user] } = await db.query('SELECT id,email,role,blocked,password_hash FROM users WHERE email=$1', [email]);
   if (!user || !await bcrypt.compare(password, user.password_hash)) throw Object.assign(error(401,'Неверный адрес или пароль'),{fields:{password:'Проверьте адрес электронной почты и пароль'}});
+  if (user.blocked) throw error(403,'Аккаунт заблокирован администратором');
   const token = jwt.sign({ email: user.email, role: user.role }, secret, {
     subject: String(user.id), expiresIn: '8h', algorithm: 'HS256',
   });

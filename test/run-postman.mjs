@@ -4,6 +4,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import newman from 'newman';
 import {checkSecurity} from './security-api.mjs';
+import {checkAdminManagement} from './admin-management-api.mjs';
 import {checkSeed} from './seed-api.mjs';
 import {checkWorker} from './worker-api.mjs';
 import { checkAdmin } from './admin-api.mjs';
@@ -53,6 +54,7 @@ try {
     await checkSecurity(base,env.DATABASE_URL,env.JWT_SECRET);
     await checkWorker(root,env);
     await checkSeed(root,env);
+    await checkAdminManagement(base,env.DATABASE_URL,env.JWT_SECRET);
   }
 } finally {
   server.kill('SIGTERM');

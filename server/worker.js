@@ -10,8 +10,8 @@ async function claim() {
     // Блокировка строки исключает одновременную отправку двумя обработчиками.
     const { rows: [post] } = await client.query(`
       SELECT p.id,p.body,p.youtube_title,p.youtube_privacy,p.youtube_made_for_kids,p.telegram_html,p.silent,p.protect_content,c.platform,c.destination,c.credential
-      FROM posts p JOIN channels c ON c.id=p.channel_id
-      WHERE p.status='scheduled' AND p.scheduled_at<=now()
+      FROM posts p JOIN channels c ON c.id=p.channel_id JOIN users u ON u.id=p.user_id
+      WHERE NOT u.blocked AND p.status='scheduled' AND p.scheduled_at<=now()
       ORDER BY p.scheduled_at,p.id LIMIT 1 FOR UPDATE OF p SKIP LOCKED
     `);
     if (!post) return null;

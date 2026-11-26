@@ -45,6 +45,8 @@ router.get('/callback', async (req,res) => {
   try {
     if (req.query.error) return res.redirect('/channels/new?youtube_error=cancelled');
     if (typeof req.query.code !== 'string' || req.query.code.length > 4096) throw new YouTubeError('Неверный код Google');
+    const user = await db.query('SELECT id FROM users WHERE id=$1 AND NOT blocked',[Number(claims.sub)]);
+    if (!user.rowCount) return res.redirect('/channels/new?youtube_error=access');
     const tokens = await exchangeYouTubeCode(req.query.code);
     const channel = await youtubeChannel(tokens.access_token);
     const credential = encrypt(JSON.stringify({refresh_token:tokens.refresh_token}));
