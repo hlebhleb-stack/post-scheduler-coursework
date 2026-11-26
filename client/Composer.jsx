@@ -13,7 +13,7 @@ const extensions = [StarterKit.configure({ heading:false, horizontalRule:false, 
   Placeholder.configure({ placeholder:'Напишите текст публикации…' })];
 const escape = value => value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('\n','<br>');
 
-export function RichText({ body, html, onChange, readOnly = false, limit = 4096 }) {
+export function RichText({ body, html, onChange, readOnly = false, limit = 4096, invalid = false }) {
   const editor = useEditor({
     extensions, content: html || '<p>' + escape(body || '') + '</p>', editable:!readOnly,
     editorProps:{ attributes: { role:'textbox', 'aria-label':'Текст публикации', 'aria-multiline':'true' } },
@@ -23,6 +23,12 @@ export function RichText({ body, html, onChange, readOnly = false, limit = 4096 
   useEffect(() => {
     if (editor && editor.getText({ blockSeparator:'\n' }) !== body) editor.commands.setContent(html || '<p>' + escape(body || '') + '</p>', { emitUpdate:false });
   }, [body, html, editor]);
+  useEffect(()=>{
+    if(!editor) return;
+    editor.view.dom.setAttribute('aria-invalid',String(invalid));
+    if(invalid) editor.view.dom.setAttribute('aria-describedby','error-body');
+    else editor.view.dom.removeAttribute('aria-describedby');
+  },[editor,invalid]);
   if (!editor) return null;
   const tools = [
     ['Жирный', Bold, 'bold', () => editor.chain().focus().toggleBold().run()],
@@ -39,7 +45,7 @@ export function RichText({ body, html, onChange, readOnly = false, limit = 4096 
       if (/^(https?:\/\/|mailto:)/i.test(href)) editor.chain().focus().extendMarkRange('link').setLink({ href }).run();
     }],
   ];
-  return <div className={readOnly ? 'richRead' : 'richField'}>
+  return <div className={readOnly ? 'richRead' : 'richField'+(invalid?' fieldInvalid':'')}>
     {!readOnly && <div className="formatTools" role="group" aria-label="Форматирование текста">{tools.map(([title,Icon,mark,run]) =>
       <button type="button" title={title} aria-label={title} aria-pressed={editor.isActive(mark)} key={mark} onClick={run}><Icon size={17}/></button>)}</div>}
     <EditorContent editor={editor}/>

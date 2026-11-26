@@ -52,10 +52,10 @@ async function savePost(req, res) {
   const result = await transaction(async client => {
     const channel = take(await client.query('SELECT platform FROM channels WHERE id=$1 AND user_id=$2 FOR KEY SHARE', [channel_id, req.userId]));
     if (status === 'scheduled' && Date.parse(scheduled_at) <= Date.now()) {
-      throw error(400, 'Время публикации должно быть в будущем');
+      throw Object.assign(error(400,'Время публикации должно быть в будущем'),{fields:{scheduled_at:'Выберите дату и время в будущем'}});
     }
     if (channel.platform === 'instagram' && (!image_url || body.length > 2200)) {
-      throw error(400, 'Instagram требует HTTPS-ссылку на фото и подпись до 2200 символов');
+      throw Object.assign(error(400,'Проверьте публикацию Instagram'),{fields:{...(!image_url?{image_url:'Добавьте HTTPS-ссылку на фото'}:{}),...(body.length>2200?{body:'Подпись Instagram — до 2200 символов'}:{})}});
     }
     let current;
     if (req.params.id) {
@@ -78,9 +78,9 @@ async function savePost(req, res) {
     const all = [...kept, ...files, ...selected];
     if (all.length > 10 || all.reduce((sum, file) => sum + file.size, 0) > maxUploadBytes) throw error(400, 'До 10 вложений общим размером до 50 МБ');
     if (files.some(file => file.size === 0 || (file.kind === 'photo' && file.size > 10 * 1024 * 1024))) throw error(400, 'Фото — до 10 МБ. Пустые файлы не поддерживаются');
-    if (!body && !all.length) throw error(400, 'Добавь текст или вложение');
+    if (!body && !all.length) throw Object.assign(error(400,'Добавьте текст или вложение'),{fields:{body:'Напишите текст или прикрепите файл'}});
     if (all.length && channel.platform !== 'telegram') throw error(400, 'Загрузка файлов доступна для Telegram');
-    if (all.length && body.length > 1024) throw error(400, 'Подпись к вложению — до 1024 символов');
+    if (all.length && body.length > 1024) throw Object.assign(error(400,'Подпись к вложению — до 1024 символов'),{fields:{body:'Сократите подпись до 1024 символов'}});
     if (all.length > 1) {
       const family = item => ['photo','video'].includes(item.kind) ? 'visual' : item.kind;
       if (all.some(item => family(item) !== family(all[0])) || all.some(item => item.kind === 'animation')) throw error(400, 'Альбом может содержать фото и видео вместе, только музыку или только документы. GIF отправляется отдельно');

@@ -18,7 +18,7 @@ export async function request(path, options = {}) {
       sessionStorage.removeItem(sessionKey);
       window.dispatchEvent(new Event('session-expired'));
     }
-    throw new Error(data.error || 'Не удалось выполнить запрос');
+    throw Object.assign(new Error(data.error || 'Не удалось выполнить запрос'), {fields:data.fields || {}});
   }
   return data;
 }

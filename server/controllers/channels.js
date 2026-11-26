@@ -9,14 +9,30 @@ router.param('id', (req,res,next,id) => {
   next();
 });
 import { access } from '../middleware/rate-limit.js';
-import { encrypt, verifyChannel } from '../providers.js';
+import { encrypt, verifyChannel, ProviderError } from '../providers.js';
 const name = z.string().trim().min(1).max(80);
 const channel = z.object({
   name, platform: z.enum(['telegram', 'instagram']),
   destination: z.string().trim().min(1).max(80),
   token: z.string().trim().min(1).max(2048).optional(),
-}).refine(({ platform, destination }) => platform === 'telegram'
-  ? /^(?:@[a-zA-Z0-9_]{5,32}|-100\d{5,20})$/.test(destination) : /^\d{5,30}$/.test(destination));
+})
+  .refine(({platform,destination})=>platform!=='telegram' || /^(?:@[a-zA-Z0-9_]{5,32}|-100\d{5,20})$/.test(destination), {
+    path:['destination'],message:'Укажите @имя канала или числовой ID, начинающийся с -100',
+  })
+  .refine(({platform,destination})=>platform!=='instagram' || /^\d{5,30}$/.test(destination), {
+    path:['destination'],message:'ID профессионального аккаунта должен содержать только цифры',
+  });
+
+async function checkChannel(platform,destination,token) {
+  try { return await verifyChannel(platform,destination,token); }
+  catch(err) {
+    if(err instanceof ProviderError) {
+      if(/токен/i.test(err.message)) err.fields={token:err.message};
+      else if(/канал|администратор|право|права/i.test(err.message)) err.fields={destination:err.message};
+    }
+    throw err;
+  }
+}
 
 const channelColumns = 'id,name,platform,destination';
 router.get('', async (req, res) => {
@@ -27,8 +43,8 @@ router.get('/:id', async (req, res) => {
 });
 router.post('', access, fields(channel), async (req, res) => {
   const { name, platform, destination, token } = req.input;
-  if (!token) throw error(400, 'Для подключения нужен токен');
-  const verified = await verifyChannel(platform, destination, token);
+  if (!token) throw Object.assign(error(400,'Для подключения нужен токен'),{fields:{token:'Введите токен бота или аккаунта'}});
+  const verified = await checkChannel(platform, destination, token);
   res.status(201).json(take(await db.query(
     `INSERT INTO channels(user_id,name,platform,destination,credential) VALUES ($1,$2,$3,$4,$5) RETURNING ${channelColumns}`,
     [req.userId, name, platform, verified, encrypt(token)],
@@ -40,7 +56,7 @@ router.put('/:id', access, fields(channel), async (req, res) => {
   if (current.platform !== platform || current.destination !== destination) {
     throw error(409, 'Для другого получателя создай отдельный канал');
   }
-  if (token) await verifyChannel(platform, destination, token);
+  if (token) await checkChannel(platform, destination, token);
   res.json(take(await db.query(
     `UPDATE channels SET name=$1,credential=COALESCE($2,credential) WHERE id=$3 AND user_id=$4 RETURNING ${channelColumns}`,
     [name, token ? encrypt(token) : null, req.params.id, req.userId],

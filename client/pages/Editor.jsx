@@ -4,6 +4,7 @@ import {sections,platforms} from '../config.js';
 import {request} from '../services/api.js';
 import {useData} from '../hooks/useData.js';
 import {Feedback,Back} from '../components/Common.jsx';
+import {FormField,FieldError,validateForm,focusFirstError} from '../components/FormField.jsx';
 import {MediaSelector} from '../components/MediaSelector.jsx';
 import {RichText,AttachmentList,FilePicker} from '../Composer.jsx';
 export default function Editor({ kind, create = false }) {
@@ -44,13 +45,17 @@ function Fields({ kind, data, channels = [] }) {
   const [platform, setPlatform] = useState(data?.platform || 'telegram');
   const [channelId, setChannelId] = useState(String(data?.channel_id || channels[0]?.id || ''));
   const [error, setError] = useState('');
+  const [fieldErrors,setFieldErrors]=useState({});
   const [pending, setPending] = useState(false);
   const currentChannel = channels.find(channel => String(channel.id) === channelId);
   const at = new Date(data?.scheduled_at || Date.now() + 10 * 60 * 1000);
   const localTime = new Date(at.getTime() - at.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   async function save(event) {
     event.preventDefault();
-    const input = Object.fromEntries(new FormData(event.currentTarget));
+    const form=event.currentTarget;
+    const invalid=validateForm(form);setFieldErrors(invalid);
+    if(Object.keys(invalid).length){focusFirstError(form,invalid);return;}
+    const input = Object.fromEntries(new FormData(form));
     setError('');
     setPending(true);
     try {
@@ -76,7 +81,9 @@ function Fields({ kind, data, channels = [] }) {
       const row = await request(kind + (data ? '/' + data.id : ''), { method: data ? 'PUT' : 'POST', body: payload });
       navigate('/' + kind + '/' + row.id);
     } catch (error) {
-      setError(error.message);
+      setFieldErrors(error.fields || {});
+      setError(Object.keys(error.fields || {}).length?'':error.message);
+      focusFirstError(form,error.fields || {});
     } finally {
       setPending(false);
     }
@@ -84,23 +91,24 @@ function Fields({ kind, data, channels = [] }) {
   if (kind === 'posts' && !channels.length) return <div className="formPanel">
     <p>Подключи канал, чтобы создать публикацию.</p><Link className="primary" to="/channels/new">Подключить канал</Link>
   </div>;
-  return <form className="formPanel" onSubmit={save}>
-    {kind !== 'posts' && <label>Название<input name="name" required maxLength={80} defaultValue={data?.name}/></label>}
+  return <form className="formPanel" noValidate onSubmit={save} onChange={event=>{const name=event.target.name;if(name)setFieldErrors(current=>({...current,[name]:undefined}));}}>
+    {kind !== 'posts' && <FormField name="name" label="Название" message={fieldErrors.name}><input required maxLength={80} defaultValue={data?.name}/></FormField>}
     {kind === 'channels' ? <>
-      <label>Платформа<select value={platform} disabled={Boolean(data)} onChange={event => setPlatform(event.target.value)}>
-        <option value="telegram">Telegram</option><option value="instagram">Instagram</option></select></label>
-      <label>{platform === 'telegram' ? 'Имя или ID канала' : 'ID профессионального аккаунта'}
-        <input name="destination" required readOnly={Boolean(data)} defaultValue={data?.destination} placeholder={platform === 'telegram' ? '@my_channel' : undefined}/></label>
-      <label>{data ? 'Новый токен (необязательно)' : 'Токен доступа'}<input type="password" autoComplete="off" name="token" required={!data}/></label>
+      <FormField name="platform" label="Платформа" message={fieldErrors.platform}><select value={platform} disabled={Boolean(data)} onChange={event => setPlatform(event.target.value)}>
+        <option value="telegram">Telegram</option><option value="instagram">Instagram</option></select></FormField>
+      <FormField name="destination" label={platform === 'telegram' ? 'Имя или ID канала' : 'ID профессионального аккаунта'} message={fieldErrors.destination}>
+        <input required readOnly={Boolean(data)} defaultValue={data?.destination} placeholder={platform === 'telegram' ? '@my_channel' : 'Например, 17841400000000000'}/></FormField>
+      <FormField name="token" label={data ? 'Новый токен (необязательно)' : 'Токен доступа'} message={fieldErrors.token}><input type="password" autoComplete="off" required={!data}/></FormField>
       <p className="muted">{platform === 'telegram' ? 'Добавь своего бота администратором канала с правом публикации.' : 'Используй токен Instagram Login с правом публикации.'}</p>
     </> : <>
       {kind === 'posts' && <>
-        <label>Канал<select value={channelId} onChange={event => setChannelId(event.target.value)}>
-          {channels.map(item => <option key={item.id} value={item.id}>{item.name} · {platforms[item.platform]}</option>)}</select></label>
+        <FormField name="channel_id" label="Канал" message={fieldErrors.channel_id}><select value={channelId} onChange={event => setChannelId(event.target.value)}>
+          {channels.map(item => <option key={item.id} value={item.id}>{item.name} · {platforms[item.platform]}</option>)}</select></FormField>
       </>}
       {kind === 'posts' && currentChannel?.platform === 'telegram' ? <div className="composerText"><label>Текст публикации</label>
-        <RichText body={body} html={html} limit={attachments.length ? 1024 : 4096} onChange={value => { setBody(value.body); setHtml(value.html); }}/>
-      </div> : <label>{kind === 'posts' ? 'Текст публикации' : 'Текст публикации'}<textarea name="body" required rows={7} maxLength={currentChannel?.platform === 'instagram' ? 2200 : 4096} value={body} onChange={event => setBody(event.target.value)}/></label>}
+        <RichText body={body} html={html} invalid={Boolean(fieldErrors.body)} limit={attachments.length ? 1024 : 4096} onChange={value => { setBody(value.body); setHtml(value.html);setFieldErrors(current=>({...current,body:undefined})); }}/>
+        <FieldError name="body" message={fieldErrors.body}/>
+      </div> : <FormField name="body" label="Текст публикации" message={fieldErrors.body}><textarea required rows={7} maxLength={currentChannel?.platform === 'instagram' ? 2200 : 4096} value={body} onChange={event => setBody(event.target.value)}/></FormField>}
       {kind === 'posts' && currentChannel?.platform === 'telegram' && <div className="mediaSection">
         <div className="attachmentActions"><FilePicker onSelect={addFiles} disabled={pending}/>
           <MediaSelector selectedIds={attachments.filter(file=>file.media_id).map(file=>file.media_id)} onSelect={file=>{
@@ -114,14 +122,14 @@ function Fields({ kind, data, channels = [] }) {
         <label className="checkField"><input type="checkbox" name="protect_content" defaultChecked={data?.protect_content}/>Запретить сохранение и пересылку</label>
       </div>}
       {kind === 'posts' && <>
-        {currentChannel?.platform === 'instagram' && <label>HTTPS-ссылка на фото<input name="image_url" type="url" defaultValue={data?.image_url || ''} required/></label>}
+        {currentChannel?.platform === 'instagram' && <FormField name="image_url" label="HTTPS-ссылка на фото" message={fieldErrors.image_url}><input type="url" defaultValue={data?.image_url || ''} required/></FormField>}
         <div className="fieldRow">
-          <label>Дата и время<input name="scheduled_at" type="datetime-local" defaultValue={localTime} required/></label>
-          <label>Режим<select name="status" defaultValue={data?.status === 'scheduled' ? 'scheduled' : 'draft'}><option value="draft">Черновик</option><option value="scheduled">Запланировать</option></select></label>
+          <FormField name="scheduled_at" label="Дата и время" message={fieldErrors.scheduled_at}><input type="datetime-local" defaultValue={localTime} required/></FormField>
+          <FormField name="status" label="Режим" message={fieldErrors.status}><select defaultValue={data?.status === 'scheduled' ? 'scheduled' : 'draft'}><option value="draft">Черновик</option><option value="scheduled">Запланировать</option></select></FormField>
         </div>
       </>}
     </>}
-    {error && <p className="error" role="alert">{error}</p>}
+    {error && <p className="inlineError" role="alert">{error}</p>}
     <div className="actions"><button className="primary" disabled={pending}>{pending ? 'Сохраняется…' : 'Сохранить'}</button>
       <Link className="quiet" to={'/' + kind}>Отмена</Link></div>
   </form>;

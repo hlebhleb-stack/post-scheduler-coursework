@@ -1,9 +1,8 @@
 import React,{useState} from 'react';
 import {Link} from 'react-router-dom';
-import {Plus,ArrowUpRight} from 'lucide-react';
+import {Plus} from 'lucide-react';
 import {useData} from '../hooks/useData.js';
 import {Feedback} from '../components/Common.jsx';
-import {time,platforms} from '../config.js';
 
 const dateLabel = date => new Date(date+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
 const months = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
@@ -26,14 +25,12 @@ function Activity({daily}) {
 export default function Dashboard() {
   const result=useData('analytics');
   if (!result.data) return <section><header className="pageHeading"><h1>Обзор</h1></header><Feedback result={result}/></section>;
-  const {daily,counts,channels,upcoming} = result.data;
+  const {daily,counts} = result.data;
   const lastWeek=daily.slice(-7).reduce((sum,day)=>sum+day.count,0);
   const metrics=[['За 7 дней',lastWeek],['Опубликовано',counts.published],['В расписании',counts.scheduled],['Требуют проверки',counts.failed]];
   return <section className="dashboard"><header className="pageHeading"><div><h1>Обзор</h1><p className="pageCount">Публикации, расписание и активность каналов</p></div><Link className="primary" to="/posts/new"><Plus size={17}/>Создать публикацию</Link></header>
     <div className="metrics">{metrics.map(([label,value])=><div className="metric" key={label}><span className="metricLabel">{label}</span><strong>{value}</strong></div>)}</div>
     <Activity daily={daily}/>
-    <div className="dashboardBottom"><section><div className="sectionHeading"><div><h2>Каналы</h2><p>Опубликовано за всё время</p></div><Link className="iconLink" to="/channels" aria-label="Открыть каналы"><ArrowUpRight size={19}/></Link></div>
-      <div className="channelStats">{channels.length ? channels.map(channel=><Link to={'/channels/'+channel.id} key={channel.id}><div className="channelStatLabel"><span>{channel.name}<small>{platforms[channel.platform]}</small></span><strong>{channel.published}</strong></div></Link>) : <p className="muted">Подключите канал, чтобы начать публиковать</p>}</div>
-    </section><section><div className="sectionHeading"><div><h2>Ближайшие публикации</h2><p>Очередь отправки</p></div><Link className="iconLink" to="/posts" aria-label="Открыть публикации"><ArrowUpRight size={19}/></Link></div><div className="upcomingList">{upcoming.length ? upcoming.map(post=><Link to={'/posts/'+post.id} key={post.id}><span><strong>{post.body.slice(0,60)||post.attachment_name||'Вложение'}</strong><small>{post.channel_name}</small></span><time dateTime={post.scheduled_at}>{time(post.scheduled_at)}</time></Link>) : <p className="muted">Запланированных публикаций пока нет</p>}</div></section></div>
+
   </section>;
 }

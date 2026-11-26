@@ -16,13 +16,13 @@ router.post('/register', access, fields(account), async (req, res) => {
   const { email, password } = req.input;
   const hash = await bcrypt.hash(password, 12);
   const result = await db.query('INSERT INTO users(email,password_hash) VALUES ($1,$2) ON CONFLICT DO NOTHING RETURNING id', [email, hash]);
-  if (!result.rowCount) throw error(409, 'Этот адрес уже зарегистрирован');
+  if (!result.rowCount) throw Object.assign(error(409,'Этот адрес уже зарегистрирован'),{fields:{email:'Этот адрес уже зарегистрирован. Войдите в аккаунт'}});
   res.status(201).json({ email });
 });
 router.post('/login', access, fields(account), async (req, res) => {
   const { email, password } = req.input;
   const { rows: [user] } = await db.query('SELECT id,email,role,password_hash FROM users WHERE email=$1', [email]);
-  if (!user || !await bcrypt.compare(password, user.password_hash)) throw error(401, 'Неверный адрес или пароль');
+  if (!user || !await bcrypt.compare(password, user.password_hash)) throw Object.assign(error(401,'Неверный адрес или пароль'),{fields:{password:'Проверьте адрес электронной почты и пароль'}});
   const token = jwt.sign({ email: user.email, role: user.role }, secret, {
     subject: String(user.id), expiresIn: '8h', algorithm: 'HS256',
   });
