@@ -13,8 +13,9 @@ export default function List({ kind }) {
     (row.name || row.body).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())
     && (!status || row.status === status)
   ));
-  return <section>
-    <header className="pageHeading"><div><h1>{meta.title}</h1><p className="pageCount">{rows ? `${rows.length} ${kind === 'posts' ? 'в списке' : kind === 'channels' ? 'подключено' : 'в списке'}` : 'Загрузка…'}</p></div>
+  return <section aria-label={meta.title}>
+    <h1 className="visuallyHidden">{meta.title}</h1>
+    <header className="pageHeading compactHeading"><p className="pageCount">{rows ? `${rows.length} ${kind === 'posts' ? 'в списке' : kind === 'channels' ? 'подключено' : 'в списке'}` : 'Загрузка…'}</p>
       <Link className="primary" to={'/' + kind + '/new'}><Plus size={18} aria-hidden="true"/> {meta.action}</Link></header>
     <div className="listPanel">
       <div className="filters"><div className="searchField"><Search size={17} aria-hidden="true"/>
