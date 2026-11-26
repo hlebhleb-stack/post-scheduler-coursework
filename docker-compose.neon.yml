@@ -1,0 +1,19 @@
+# Приложение в Docker подключается к существующей PostgreSQL в Neon.
+# Рабочая очередь по умолчанию остаётся на Render: запуск локального сайта не отправляет посты.
+services:
+  app:
+    build: .
+    image: coursework-scheduler-neon
+    env_file: [.env.neon]
+    environment:
+      PORT: "3000"
+      EMBEDDED_WORKER: "0"
+    ports: ["127.0.0.1:3000:3000"]
+    command: [node, server/app.js]
+  worker:
+    image: coursework-scheduler-neon
+    pull_policy: never
+    profiles: [worker]
+    env_file: [.env.neon]
+    command: [npm, run, worker]
+    init: true
