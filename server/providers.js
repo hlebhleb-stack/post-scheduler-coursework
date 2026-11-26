@@ -27,7 +27,7 @@ export class ProviderError extends Error {
   }
 }
 
-async function request(url, options) {
+async function request(url, options, errorMessage) {
   let response;
   try {
     response = await fetch(url, { ...options, signal: AbortSignal.timeout(15000), redirect: 'error' });
@@ -36,10 +36,29 @@ async function request(url, options) {
   }
   const body = await response.json().catch(() => null);
   if (!response.ok || body?.ok === false || body?.error) {
-    throw new ProviderError(`Платформа отклонила запрос (HTTP ${response.status})`, response.status < 500);
+    throw new ProviderError(errorMessage?.(response.status, body) || `Платформа отклонила запрос (HTTP ${response.status})`, response.status < 500);
   }
   if (!body) throw new ProviderError('Платформа вернула нечитаемый ответ');
   return body;
+}
+
+function telegramError(method, status, body) {
+  if (status === 401 || (method === 'getMe' && [400, 404].includes(status))) {
+    return 'Telegram не принял токен. Скопируй токен этого бота из @BotFather целиком.';
+  }
+  if (status === 429) return 'Telegram ограничил частоту запросов. Попробуй позже.';
+  if (status >= 500) return 'Telegram временно недоступен.';
+  const detail = typeof body?.description === 'string' ? body.description.toLowerCase() : '';
+  if (method === 'getChat' && (status === 400 || status === 403)) {
+    return 'Telegram не нашёл доступный канал. Проверь @имя или ID канала и добавь этого бота в администраторы.';
+  }
+  if (method === 'getChatMember' && (status === 400 || status === 403)) {
+    return 'Telegram не смог проверить права. Добавь этого бота в администраторы канала с правом публикации.';
+  }
+  if (method === 'sendMessage' && (status === 403 || /forbidden|not enough rights|chat not found/.test(detail))) {
+    return 'Telegram не разрешил отправку. Проверь, что канал доступен боту и у него есть право публикации.';
+  }
+  return `Telegram отклонил запрос (HTTP ${status}).`;
 }
 
 async function telegram(token, method, body = {}) {
@@ -48,7 +67,7 @@ async function telegram(token, method, body = {}) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  });
+  }, (status, response) => telegramError(method, status, response));
   return data.result;
 }
 
