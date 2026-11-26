@@ -4,21 +4,21 @@ import {sections,platforms} from '../config.js';
 import {request} from '../services/api.js';
 import {useData} from '../hooks/useData.js';
 import {Feedback,Back} from '../components/Common.jsx';
+import {MediaSelector} from '../components/MediaSelector.jsx';
 import {RichText,AttachmentList,FilePicker} from '../Composer.jsx';
 export default function Editor({ kind, create = false }) {
   const { id } = useParams();
   const result = useData(kind, create ? 'new' : id);
   const references = useData(!create && kind === 'posts' ? 'posts' : 'channels', 'new');
   const channels = create ? result.channels : references.channels;
-  const templates = create ? result.templates : references.templates;
   const ready = create ? kind !== 'posts' || channels : result.data && (kind !== 'posts' || channels);
   return <section className="formPage"><Back kind={kind}/>
     <header className="pageHeading"><h1>{create ? sections[kind].action : 'Редактирование'}</h1></header>
-    {!ready ? <Feedback result={result.error ? result : references}/> : <Fields key={kind + (id || 'new')} kind={kind} data={result.data} channels={channels} templates={templates}/>}
+    {!ready ? <Feedback result={result.error ? result : references}/> : <Fields key={kind + (id || 'new')} kind={kind} data={result.data} channels={channels}/>}
   </section>;
 }
 
-function Fields({ kind, data, channels = [], templates = [] }) {
+function Fields({ kind, data, channels = [] }) {
   const navigate = useNavigate();
   const [body, setBody] = useState(data?.body || '');
   const [html, setHtml] = useState(data?.telegram_html || '');
@@ -58,8 +58,9 @@ function Fields({ kind, data, channels = [], templates = [] }) {
       if (kind === 'posts') payload = {
         channel_id: Number(channelId), body,
         telegram_html: currentChannel?.platform === 'telegram' ? html || null : null,
+        media_ids: currentChannel?.platform === 'telegram' ? attachments.filter(file=>file.media_id).map(file=>file.media_id) : [],
         silent: input.silent === 'on', protect_content: input.protect_content === 'on',
-        attachment_ids: currentChannel?.platform === 'telegram' ? attachments.filter(file => file.id).map(file => file.id) : [],
+        attachment_ids: currentChannel?.platform === 'telegram' ? attachments.filter(file => file.id && !file.media_id).map(file => file.id) : [],
         image_url: input.image_url || null, scheduled_at: new Date(input.scheduled_at).toISOString(), status: input.status,
       };
       if (kind === 'channels') payload = {
@@ -96,16 +97,16 @@ function Fields({ kind, data, channels = [], templates = [] }) {
       {kind === 'posts' && <>
         <label>Канал<select value={channelId} onChange={event => setChannelId(event.target.value)}>
           {channels.map(item => <option key={item.id} value={item.id}>{item.name} · {platforms[item.platform]}</option>)}</select></label>
-        {templates.length > 0 && <label>Подставить текст шаблона<select defaultValue="" onChange={event => {
-          const selected = templates.find(item => String(item.id) === event.target.value);
-          if (selected) { setBody(selected.body); setHtml(''); }
-        }}><option value="">Выбрать шаблон</option>{templates.map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>}
       </>}
       {kind === 'posts' && currentChannel?.platform === 'telegram' ? <div className="composerText"><label>Текст публикации</label>
         <RichText body={body} html={html} limit={attachments.length ? 1024 : 4096} onChange={value => { setBody(value.body); setHtml(value.html); }}/>
-      </div> : <label>{kind === 'posts' ? 'Текст публикации' : 'Текст шаблона'}<textarea name="body" required rows={7} maxLength={currentChannel?.platform === 'instagram' ? 2200 : 4096} value={body} onChange={event => setBody(event.target.value)}/></label>}
+      </div> : <label>{kind === 'posts' ? 'Текст публикации' : 'Текст публикации'}<textarea name="body" required rows={7} maxLength={currentChannel?.platform === 'instagram' ? 2200 : 4096} value={body} onChange={event => setBody(event.target.value)}/></label>}
       {kind === 'posts' && currentChannel?.platform === 'telegram' && <div className="mediaSection">
-        <FilePicker onSelect={addFiles} disabled={pending}/>
+        <div className="attachmentActions"><FilePicker onSelect={addFiles} disabled={pending}/>
+          <MediaSelector selectedIds={attachments.filter(file=>file.media_id).map(file=>file.media_id)} onSelect={file=>{
+            if (attachments.length>=10 || attachments.reduce((sum,item)=>sum+item.size,0)+file.size>50*1024*1024) { setError('До 10 файлов общим размером до 50 МБ'); return; }
+            setAttachments([...attachments,{...file,media_id:file.id}]);setError('');
+          }}/></div>
         <p className="muted">До 10 файлов, всего до 50 МБ. Фото — до 10 МБ. Подпись — до 1024 символов.</p>
         <AttachmentList files={attachments} onRemove={index => setAttachments(attachments.filter((_,i) => i !== index))}/>
         {attachments.length > 1 && <p className="muted">Альбом — фото и видео вместе, только музыка или только документы. GIF отправляется отдельно.</p>}

@@ -14,12 +14,6 @@ CREATE TABLE IF NOT EXISTS channels (
   UNIQUE(id, user_id),
   UNIQUE(user_id, platform, destination)
 );
-CREATE TABLE IF NOT EXISTS templates (
-  id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id integer NOT NULL REFERENCES users(id),
-  name text NOT NULL,
-  body text NOT NULL
-);
 CREATE TABLE IF NOT EXISTS posts (
   id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id integer NOT NULL REFERENCES users(id),
@@ -57,3 +51,9 @@ CREATE TABLE IF NOT EXISTS attachments (
   position integer NOT NULL
 );
 CREATE INDEX IF NOT EXISTS attachments_post ON attachments(post_id);
+
+-- Файлы медиатеки и копии вложений используют одну таблицу.
+-- У файла медиатеки есть владелец, у копии публикации — post_id.
+ALTER TABLE attachments ALTER COLUMN post_id DROP NOT NULL;
+ALTER TABLE attachments ADD COLUMN IF NOT EXISTS user_id integer REFERENCES users(id);
+CREATE INDEX IF NOT EXISTS media_owner ON attachments(user_id) WHERE post_id IS NULL;

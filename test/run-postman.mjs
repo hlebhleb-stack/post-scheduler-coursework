@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import newman from 'newman';
 import { checkAdmin } from './admin-api.mjs';
 import { checkAnalytics } from './analytics-api.mjs';
+import { checkMediaLibrary } from './media-library-api.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 if (!process.env.TEST_DATABASE_URL) throw new Error('Задай TEST_DATABASE_URL отдельной тестовой PostgreSQL');
@@ -42,6 +43,7 @@ try {
   else {
     await checkAdmin(base, env.DATABASE_URL);
     await checkAnalytics(base, env.DATABASE_URL, env.JWT_SECRET);
+    await checkMediaLibrary(base, env.DATABASE_URL, env.JWT_SECRET);
   }
 } finally {
   server.kill('SIGTERM');

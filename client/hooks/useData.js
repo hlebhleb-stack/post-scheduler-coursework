@@ -9,12 +9,11 @@ export function useData(kind, id) {
       : request(kind, { signal: controller.signal });
     const references = kind === 'posts' && id === 'new' ? [
       request('channels', { signal: controller.signal }),
-      request('templates', { signal: controller.signal }),
     ] : [];
     const calls = id === 'new' ? [Promise.resolve(null), ...references] : [load];
     Promise.all(calls)
-      .then(([data, channels, templates]) => {
-        if (!controller.signal.aborted) setResult({ key, data, channels, templates });
+      .then(([data, channels]) => {
+        if (!controller.signal.aborted) setResult({ key, data, channels });
       })
       .catch(error => {
         if (!controller.signal.aborted) setResult({ key, error: error.message });

@@ -7,7 +7,7 @@ router.get('/overview', async (req,res) => {
   const {rows:[counts]} = await db.query(`SELECT
     (SELECT count(*)::int FROM users) AS users,
     (SELECT count(*)::int FROM channels) AS channels,
-    (SELECT count(*)::int FROM templates) AS templates,
+    (SELECT count(*)::int FROM attachments WHERE post_id IS NULL) AS media,
     (SELECT count(*)::int FROM posts) AS posts,
     (SELECT count(*)::int FROM posts WHERE status='scheduled') AS scheduled,
     (SELECT count(*)::int FROM posts WHERE status='scheduled' AND scheduled_at<=now()) AS overdue,

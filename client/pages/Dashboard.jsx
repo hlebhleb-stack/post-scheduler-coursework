@@ -1,6 +1,6 @@
 import React,{useState} from 'react';
 import {Link} from 'react-router-dom';
-import {Plus,ArrowUpRight,Check,Clock,CalendarDays,AlertCircle} from 'lucide-react';
+import {Plus,ArrowUpRight} from 'lucide-react';
 import {useData} from '../hooks/useData.js';
 import {Feedback} from '../components/Common.jsx';
 import {time,platforms} from '../config.js';
@@ -28,11 +28,10 @@ export default function Dashboard() {
   if (!result.data) return <section><header className="pageHeading"><h1>Обзор</h1></header><Feedback result={result}/></section>;
   const {daily,counts,channels,upcoming} = result.data;
   const lastWeek=daily.slice(-7).reduce((sum,day)=>sum+day.count,0);
-  const previousWeek=daily.slice(-14,-7).reduce((sum,day)=>sum+day.count,0);
-  const metrics=[['За 7 дней',lastWeek,CalendarDays,(lastWeek-previousWeek>=0?'+':'')+(lastWeek-previousWeek)+' к прошлой неделе'],['Опубликовано',counts.published,Check,'За всё время'],['В расписании',counts.scheduled,Clock,'Ожидают отправки'],['Требуют проверки',counts.failed,AlertCircle,'Ошибки и неизвестный результат']];
+  const metrics=[['За 7 дней',lastWeek],['Опубликовано',counts.published],['В расписании',counts.scheduled],['Требуют проверки',counts.failed]];
   const peak=Math.max(1,...channels.map(channel=>channel.published));
   return <section className="dashboard"><header className="pageHeading"><div><h1>Обзор</h1><p className="pageCount">Публикации, расписание и активность каналов</p></div><Link className="primary" to="/posts/new"><Plus size={17}/>Создать публикацию</Link></header>
-    <div className="metrics">{metrics.map(([label,value,Icon,note])=><div className="metric" key={label}><span className="metricLabel"><Icon size={15}/>{label}</span><strong>{value}</strong><span className="metricNote">{note}</span></div>)}</div>
+    <div className="metrics">{metrics.map(([label,value])=><div className="metric" key={label}><span className="metricLabel">{label}</span><strong>{value}</strong></div>)}</div>
     <Activity daily={daily}/>
     <div className="dashboardBottom"><section><div className="sectionHeading"><div><h2>Каналы</h2><p>Опубликовано за всё время</p></div><Link className="iconLink" to="/channels" aria-label="Открыть каналы"><ArrowUpRight size={19}/></Link></div>
       <div className="channelStats">{channels.length ? channels.map(channel=><Link to={'/channels/'+channel.id} key={channel.id}><div className="channelStatLabel"><span>{channel.name}<small>{platforms[channel.platform]}</small></span><strong>{channel.published}</strong></div><div className="channelTrack"><i style={{width:(channel.published/peak*100)+'%'}}/></div></Link>) : <p className="muted">Подключите канал, чтобы начать публиковать</p>}</div>

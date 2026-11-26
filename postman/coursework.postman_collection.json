@@ -2,7 +2,7 @@
   "info": {
     "name": "Курсовая — API планировщика публикаций",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Запускайте целиком по порядку. Создаёт уникальные тестовые аккаунты, удаляет свои тестовые посты, каналы и шаблоны. Все посты сохраняются черновиками. Для каналов нужен отдельный тестовый бот или локальный тестовый процесс. Аккаунты остаются, так как API удаления аккаунта отсутствует."
+    "description": "Запускайте целиком по порядку. Создаёт уникальные тестовые аккаунты, удаляет свои тестовые посты, каналы и файлы медиатеки. Все посты сохраняются черновиками. Для каналов нужен отдельный тестовый бот или локальный тестовый процесс. Аккаунты остаются, так как API удаления аккаунта отсутствует."
   },
   "auth": {
     "type": "bearer",
@@ -72,7 +72,7 @@
               "pm.collectionVariables.set('email', 'postman-' + suffix + '@example.com');",
               "pm.collectionVariables.set('other_email', 'postman-other-' + suffix + '@example.com');",
               "pm.collectionVariables.set('password', 'Postman-test-' + suffix);",
-              "['token','other_token','template_id','channel_id','post_id','media_post_id','attachment_id'].forEach(key => pm.collectionVariables.unset(key));"
+              "['token','other_token','library_id','channel_id','post_id','media_post_id','attachment_id'].forEach(key => pm.collectionVariables.unset(key));"
             ]
           }
         },
@@ -319,24 +319,25 @@
       ]
     },
     {
-      "name": "Создание шаблона",
+      "name": "Загрузка в медиатеку",
       "request": {
         "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": "{{base_url}}/api/templates",
+        "header": [],
+        "url": "{{base_url}}/api/media",
         "body": {
-          "mode": "raw",
-          "raw": "{\n  \"name\": \"Postman — шаблон\",\n  \"body\": \"Тестовый текст\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "payload",
+              "type": "text",
+              "value": "{}"
+            },
+            {
+              "key": "files",
+              "type": "file",
+              "src": "postman/fixtures/example.txt"
             }
-          }
+          ]
         }
       },
       "event": [
@@ -346,18 +347,18 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
-              "pm.collectionVariables.set('template_id', pm.response.json().id);"
+              "pm.collectionVariables.set('library_id', pm.response.json()[0].id);"
             ]
           }
         }
       ]
     },
     {
-      "name": "Список шаблонов",
+      "name": "Список медиатеки",
       "request": {
         "method": "GET",
         "header": [],
-        "url": "{{base_url}}/api/templates"
+        "url": "{{base_url}}/api/media"
       },
       "event": [
         {
@@ -366,18 +367,18 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
-              "pm.test('Созданный шаблон в списке', () => pm.expect(pm.response.json().some(row => row.id === Number(pm.collectionVariables.get('template_id')))).to.eql(true));"
+              "pm.test('Файл медиатеки в списке', () => pm.expect(pm.response.json().some(row => row.id === Number(pm.collectionVariables.get('library_id')))).to.eql(true));"
             ]
           }
         }
       ]
     },
     {
-      "name": "Детали шаблона",
+      "name": "Детали файла медиатеки",
       "request": {
         "method": "GET",
         "header": [],
-        "url": "{{base_url}}/api/templates/{{template_id}}"
+        "url": "{{base_url}}/api/media/{{library_id}}"
       },
       "event": [
         {
@@ -386,14 +387,14 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
-              "pm.test('Текст сохранён', () => pm.expect(pm.response.json().body).to.eql('Тестовый текст'));"
+              "pm.test('Имя сохранено', () => pm.expect(pm.response.json().name).to.eql('example.txt'));"
             ]
           }
         }
       ]
     },
     {
-      "name": "Изменение шаблона",
+      "name": "Переименование файла",
       "request": {
         "method": "PUT",
         "header": [
@@ -402,10 +403,10 @@
             "value": "application/json"
           }
         ],
-        "url": "{{base_url}}/api/templates/{{template_id}}",
+        "url": "{{base_url}}/api/media/{{library_id}}",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"name\": \"Postman — обновлено\",\n  \"body\": \"Обновлённый текст\"\n}",
+          "raw": "{\"name\": \"renamed.txt\"}",
           "options": {
             "raw": {
               "language": "json"
@@ -420,26 +421,26 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
-              "pm.test('Изменения сохранены', () => pm.expect(pm.response.json().body).to.eql('Обновлённый текст'));"
+              "pm.test('Имя изменено', () => pm.expect(pm.response.json().name).to.eql('renamed.txt'));"
             ]
           }
         }
       ]
     },
     {
-      "name": "Пустое название шаблона",
+      "name": "Пустое имя файла",
       "request": {
-        "method": "POST",
+        "method": "PUT",
         "header": [
           {
             "key": "Content-Type",
             "value": "application/json"
           }
         ],
-        "url": "{{base_url}}/api/templates",
+        "url": "{{base_url}}/api/media/{{library_id}}",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"name\": \"\",\n  \"body\": \"Текст\"\n}",
+          "raw": "{\"name\":\"\"}",
           "options": {
             "raw": {
               "language": "json"
@@ -533,11 +534,11 @@
       ]
     },
     {
-      "name": "Чужой шаблон недоступен",
+      "name": "Чужой файл медиатеки недоступен",
       "request": {
         "method": "GET",
         "header": [],
-        "url": "{{base_url}}/api/templates/{{template_id}}",
+        "url": "{{base_url}}/api/media/{{library_id}}",
         "auth": {
           "type": "bearer",
           "bearer": [
@@ -1169,11 +1170,11 @@
       ]
     },
     {
-      "name": "Удаление — templates",
+      "name": "Удаление — media",
       "request": {
         "method": "DELETE",
         "header": [],
-        "url": "{{base_url}}/api/templates/{{template_id}}"
+        "url": "{{base_url}}/api/media/{{library_id}}"
       },
       "event": [
         {
@@ -1188,11 +1189,11 @@
       ]
     },
     {
-      "name": "Проверка удаления — templates",
+      "name": "Проверка удаления — media",
       "request": {
         "method": "GET",
         "header": [],
-        "url": "{{base_url}}/api/templates/{{template_id}}"
+        "url": "{{base_url}}/api/media/{{library_id}}"
       },
       "event": [
         {

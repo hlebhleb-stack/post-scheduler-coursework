@@ -1,8 +1,7 @@
-import { CalendarDays, FileText, Hash } from 'lucide-react';
+import { CalendarDays, Hash } from 'lucide-react';
 export const sections = {
   posts: { title: 'Публикации', action: 'Создать публикацию', search: 'Поиск по тексту', empty: 'Публикаций пока нет', icon: CalendarDays },
   channels: { title: 'Каналы', action: 'Подключить канал', search: 'Поиск по названию', empty: 'Каналы пока не подключены', icon: Hash },
-  templates: { title: 'Шаблоны', action: 'Создать шаблон', search: 'Поиск по названию', empty: 'Шаблонов пока нет', icon: FileText },
 };
 export const labels = {
   draft: 'Черновик', scheduled: 'В расписании', publishing: 'Отправляется',

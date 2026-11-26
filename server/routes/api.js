@@ -2,7 +2,7 @@ import { Router } from 'express';
 import auth from '../controllers/auth.js';
 import channels from '../controllers/channels.js';
 import posts, { attachments } from '../controllers/posts.js';
-import templates from './templates.js';
+import media from '../controllers/media.js';
 import admin from '../controllers/admin.js';
 import analytics from '../controllers/analytics.js';
 import { authenticate } from '../middleware/auth.js';
@@ -24,7 +24,7 @@ router.param('id', (req,res,next,id) => {
 router.use('/channels',channels);
 router.use('/posts',posts);
 router.use('/attachments',attachments);
-router.use('/templates',templates);
+router.use('/media',media);
 router.use('/admin',admin);
 router.use('/analytics',analytics);
 router.use((req,res,next) => next(error(404,'Маршрут не найден')));

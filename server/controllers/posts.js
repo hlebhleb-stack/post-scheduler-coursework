@@ -16,6 +16,7 @@ const post = z.object({
   telegram_html: z.string().max(50000).nullish(),
   silent: z.boolean().default(false),
   protect_content: z.boolean().default(false),
+  media_ids: z.array(z.number().int().positive()).max(10).default([]),
   attachment_ids: z.array(z.number().int().positive()).max(10).optional(),
   image_url: z.url({ protocol: /^https$/ }).max(2048).nullish(),
   scheduled_at: z.iso.datetime(),
@@ -39,8 +40,8 @@ attachments.param('id', (req,res,next,id) => {
   next();
 });
 attachments.get('/:id', async (req, res) => {
-  const file = take(await db.query(`SELECT a.* FROM attachments a JOIN posts p ON p.id=a.post_id
-    WHERE a.id=$1 AND p.user_id=$2`, [req.params.id, req.userId]));
+  const file = take(await db.query(`SELECT a.* FROM attachments a LEFT JOIN posts p ON p.id=a.post_id
+    WHERE a.id=$1 AND (p.user_id=$2 OR (a.post_id IS NULL AND a.user_id=$2))`, [req.params.id, req.userId]));
   res.set('Content-Type', 'application/octet-stream');
   res.set('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`);
   res.set('Cache-Control', 'private, no-store');
@@ -68,7 +69,13 @@ async function savePost(req, res) {
     if (keepIds.some(id => !existing.some(file => file.id === id)) || new Set(keepIds).size !== keepIds.length) throw error(400, 'Недоступное вложение');
     const kept = existing.filter(file => keepIds.includes(file.id));
     const files = (req.files || []).map(file => ({ ...file, kind: mediaKind(file) }));
-    const all = [...kept, ...files];
+    const mediaIds = req.input.media_ids;
+    if (new Set(mediaIds).size !== mediaIds.length) throw error(400,'Файл выбран несколько раз');
+    const {rows:library} = await client.query(`SELECT id,name,mime,kind,content,size FROM attachments
+      WHERE id=ANY($1::int[]) AND user_id=$2 AND post_id IS NULL FOR SHARE`,[mediaIds,req.userId]);
+    if (library.length !== mediaIds.length) throw error(404,'Файл медиатеки не найден');
+    const selected = mediaIds.map(id=>library.find(file=>file.id===id));
+    const all = [...kept, ...files, ...selected];
     if (all.length > 10 || all.reduce((sum, file) => sum + file.size, 0) > maxUploadBytes) throw error(400, 'До 10 вложений общим размером до 50 МБ');
     if (files.some(file => file.size === 0 || (file.kind === 'photo' && file.size > 10 * 1024 * 1024))) throw error(400, 'Фото — до 10 МБ. Пустые файлы не поддерживаются');
     if (!body && !all.length) throw error(400, 'Добавь текст или вложение');
@@ -90,6 +97,10 @@ async function savePost(req, res) {
     for (const [index, file] of files.entries()) {
       await client.query('INSERT INTO attachments(post_id,name,mime,kind,content,size,position) VALUES ($1,$2,$3,$4,$5,$6,$7)',
         [postId, uploadName(file.originalname), file.mimetype, file.kind, await readFile(file.path), file.size, kept.length + index]);
+    }
+    for (const [index,file] of selected.entries()) {
+      await client.query('INSERT INTO attachments(post_id,name,mime,kind,content,size,position) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [postId,file.name,file.mime,file.kind,file.content,file.size,kept.length+files.length+index]);
     }
     return saved;
   });
