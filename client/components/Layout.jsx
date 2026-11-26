@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink, Route, Routes, Navigate } from 'react-router-dom';
+import React, { useLayoutEffect, useRef } from 'react';
+import { NavLink, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { LogOut, Shield, LayoutDashboard, Images } from 'lucide-react';
 import { sections } from '../config.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -11,8 +11,32 @@ import Dashboard from '../pages/Dashboard.jsx';
 import MediaLibrary from '../pages/MediaLibrary.jsx';
 export default function Layout() {
   const { session, logout } = useAuth();
+  const { pathname } = useLocation();
+  const workspace = useRef(null);
+  const pointerNavigation = useRef(false);
+
+  useLayoutEffect(() => {
+    const element = workspace.current;
+    if (!pointerNavigation.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+      return;
+    pointerNavigation.current = false;
+    // Меняется только прозрачность: формы и положение фокуса не пересоздаются.
+    const animation = element.animate([{ opacity: 0.88 }, { opacity: 1 }], {
+      duration: 160,
+      easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
+    });
+    return () => animation.cancel();
+  }, [pathname]);
   return (
-    <div className="shell">
+    <div
+      className="shell"
+      onPointerDownCapture={() => {
+        pointerNavigation.current = true;
+      }}
+      onKeyDownCapture={() => {
+        pointerNavigation.current = false;
+      }}
+    >
       <aside className="sidebar">
         <nav aria-label="Разделы">
           <NavLink to="/overview">
@@ -45,7 +69,7 @@ export default function Layout() {
         </div>
       </aside>
       <div className="mainArea">
-        <main className="workspace">
+        <main className="workspace" ref={workspace}>
           <Routes>
             <Route path="media" element={<MediaLibrary />} />
             <Route path="overview" element={<Dashboard />} />

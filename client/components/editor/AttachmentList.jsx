@@ -66,7 +66,10 @@ export function AttachmentList({ files, onRemove }) {
         const Icon =
           { photo: Image, animation: Image, video: Film, audio: Music }[file.kind] || File;
         return (
-          <div className="attachment" key={file.id || file.url || index}>
+          <div
+            className={'attachment' + (onRemove ? ' attachmentAdded' : '')}
+            key={file.id || file.url || index}
+          >
             <div className="attachmentInfo">
               <Icon size={19} />
               <span>
