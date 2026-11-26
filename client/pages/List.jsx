@@ -1,6 +1,6 @@
 import React,{useState} from 'react';
 import {Link} from 'react-router-dom';
-import {Plus,Search,X,ArrowRight} from 'lucide-react';
+import {Plus,Search,X} from 'lucide-react';
 import {sections,labels,platforms,clock,day} from '../config.js';
 import {useData} from '../hooks/useData.js';
 import {Status,Feedback} from '../components/Common.jsx';
@@ -31,7 +31,7 @@ export default function List({ kind }) {
           <span className="rowTitle"><strong>{row.name || row.body.slice(0, 90) || row.attachments?.[0]?.name || 'Вложение'}</strong>{row.channel_name && <small>{row.channel_name}</small>}</span>
           <span className="rowMeta">{row.scheduled_at ? <time dateTime={row.scheduled_at}>{day.format(new Date(row.scheduled_at))}<small>{clock.format(new Date(row.scheduled_at))}</small></time>
             : row.platform ? platforms[row.platform] : row.body.slice(0,55)}</span>
-          <span className="rowEnd">{row.status && <Status status={row.status}/>}<ArrowRight size={16} aria-hidden="true"/></span></Link></li>)}</ul>
+          <span className="rowEnd">{row.status && <Status status={row.status}/>}</span></Link></li>)}</ul>
       </> : <div className="empty"><span className="emptyIcon"><meta.icon size={28} strokeWidth={1.4}/></span><strong>{search || status ? 'Совпадений нет' : meta.empty}</strong>
         {(search || status) && <button className="quiet" type="button" onClick={() => { setSearch(''); setStatus(''); }}>Сбросить фильтры</button>}</div>}
     </div>
