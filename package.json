@@ -20,6 +20,7 @@
     "node": ">=24"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.5.0",
     "@tiptap/core": "^3.35.0",
     "@tiptap/extension-placeholder": "^3.35.0",
     "@tiptap/react": "^3.35.0",
@@ -28,16 +29,21 @@
     "cors": "^2.8.6",
     "express": "^5.3.0",
     "express-rate-limit": "^8.7.5",
+    "figma-squircle": "^1.1.0",
+    "flubber": "^0.4.2",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.81.0",
+    "motion": "^14.14.0",
     "multer": "^2.5.0",
     "pg": "^8.23.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.7",
+    "react-use-measure": "^2.1.7",
     "sanitize-html": "^2.18.2",
     "sequelize": "^6.37.8",
+    "sonner": "^2.0.8",
     "zod": "^4.6.7"
   },
   "devDependencies": {

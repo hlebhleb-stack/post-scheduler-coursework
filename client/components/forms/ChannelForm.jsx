@@ -1,3 +1,4 @@
+import { toast } from '../ui/Toast.jsx';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { request } from '../../services/api.js';
@@ -66,6 +67,7 @@ export function ChannelForm({ data }) {
         method: data ? 'PUT' : 'POST',
         body: payload,
       });
+      toast.success(data ? 'Канал сохранён' : 'Канал подключён');
       navigate('/channels/' + row.id);
     } catch (error) {
       setFieldErrors(error.fields || {});

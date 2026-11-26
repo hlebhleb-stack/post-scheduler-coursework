@@ -1,3 +1,5 @@
+import { DeleteButton } from '../components/ui/DeleteButton.jsx';
+import { toast } from '../components/ui/Toast.jsx';
 import React, { useState, useEffect } from 'react';
 import { Upload, FolderOpen } from 'lucide-react';
 import { request } from '../services/api.js';
@@ -47,14 +49,16 @@ export default function MediaLibrary() {
     }
     setPending(true);
     setError('');
+    const notification = toast.loading('Загрузка файлов…');
     try {
       const form = new FormData();
       form.set('payload', '{}');
       selected.forEach((file) => form.append('files', file));
       const added = await request('media', { method: 'POST', body: form });
       setFiles((current) => [...added.reverse(), ...(current || [])]);
+      toast.success(added.length === 1 ? 'Файл загружен' : 'Файлы загружены', { id: notification });
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message, { id: notification });
     } finally {
       setPending(false);
     }
@@ -72,22 +76,25 @@ export default function MediaLibrary() {
       const updated = await request('media/' + file.id, { method: 'PUT', body: { name } });
       setFiles((current) => current.map((item) => (item.id === file.id ? updated : item)));
       setEditing(null);
+      toast.success('Файл переименован');
     } catch (err) {
       if (err.fields?.name) setNameError(err.fields.name);
-      else setError(err.message);
+      else toast.error(err.message);
     } finally {
       setPending(false);
     }
   }
   async function remove(file) {
-    if (!window.confirm('Удалить файл «' + file.name + '» из медиатеки?')) return;
     setPending(true);
     setError('');
     try {
       await request('media/' + file.id, { method: 'DELETE' });
       setFiles((current) => current.filter((item) => item.id !== file.id));
+      toast.success('Файл удалён');
+      return true;
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
+      return false;
     } finally {
       setPending(false);
     }
@@ -177,9 +184,11 @@ export default function MediaLibrary() {
                   >
                     Переименовать
                   </button>
-                  <button className="danger" disabled={pending} onClick={() => remove(file)}>
-                    Удалить
-                  </button>
+                  <DeleteButton
+                    disabled={pending}
+                    onConfirm={() => remove(file)}
+                    label={'Удалить файл «' + file.name + '»'}
+                  />
                 </div>
               )}
             </article>

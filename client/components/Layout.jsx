@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { LogOut, Shield, LayoutDashboard, Images } from 'lucide-react';
 import { sections } from '../config.js';
@@ -12,33 +12,55 @@ import MediaLibrary from '../pages/MediaLibrary.jsx';
 export default function Layout() {
   const { session, logout } = useAuth();
   const { pathname } = useLocation();
-  const workspace = useRef(null);
+  const navigation = useRef(null);
   const pointerNavigation = useRef(false);
+  const positioned = useRef(false);
+  const [indicator, setIndicator] = useState(null);
 
   useLayoutEffect(() => {
-    const element = workspace.current;
-    if (!pointerNavigation.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-      return;
-    pointerNavigation.current = false;
-    // Меняется только прозрачность: формы и положение фокуса не пересоздаются.
-    const animation = element.animate([{ opacity: 0.88 }, { opacity: 1 }], {
-      duration: 160,
-      easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
-    });
-    return () => animation.cancel();
-  }, [pathname]);
+    const nav = navigation.current;
+    function measure() {
+      const active = nav.querySelector('a.active');
+      if (!active) return;
+      // Одна обводка движется между ссылками, сами пункты остаются на месте.
+      const next = {
+        top: active.offsetTop,
+        height: active.offsetHeight,
+        animate: positioned.current && pointerNavigation.current,
+      };
+      setIndicator((current) =>
+        current?.top === next.top && current?.height === next.height ? current : next,
+      );
+      positioned.current = true;
+      pointerNavigation.current = false;
+    }
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, [pathname, session.role]);
   return (
-    <div
-      className="shell"
-      onPointerDownCapture={() => {
-        pointerNavigation.current = true;
-      }}
-      onKeyDownCapture={() => {
-        pointerNavigation.current = false;
-      }}
-    >
+    <div className="shell">
       <aside className="sidebar">
-        <nav aria-label="Разделы">
+        <nav
+          className="sidebarNavigation"
+          ref={navigation}
+          aria-label="Разделы"
+          onPointerDownCapture={() => {
+            pointerNavigation.current = true;
+          }}
+          onKeyDownCapture={() => {
+            pointerNavigation.current = false;
+          }}
+        >
+          {indicator && (
+            <span
+              aria-hidden="true"
+              className="navigationIndicator"
+              data-animate={indicator.animate}
+              style={{ transform: `translateY(${indicator.top}px)`, height: indicator.height }}
+            />
+          )}
           <NavLink to="/overview">
             <LayoutDashboard size={18} />
             <span>Обзор</span>
@@ -69,7 +91,7 @@ export default function Layout() {
         </div>
       </aside>
       <div className="mainArea">
-        <main className="workspace" ref={workspace}>
+        <main className="workspace">
           <Routes>
             <Route path="media" element={<MediaLibrary />} />
             <Route path="overview" element={<Dashboard />} />

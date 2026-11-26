@@ -1,3 +1,5 @@
+import { DeleteButton } from '../components/ui/DeleteButton.jsx';
+import { toast } from '../components/ui/Toast.jsx';
 import React, { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { platforms, time } from '../config.js';
@@ -10,18 +12,18 @@ export default function Detail({ kind }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const result = useData(kind, id);
-  const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
   const data = result.data;
   async function remove() {
-    if (!window.confirm('Удалить запись?')) return;
-    setError('');
     setPending(true);
     try {
       await request(kind + '/' + id, { method: 'DELETE' });
+      toast.success(kind === 'posts' ? 'Публикация удалена' : 'Канал удалён');
       navigate('/' + kind);
+      return true;
     } catch (error) {
-      setError(error.message);
+      toast.error(error.message);
+      return false;
     } finally {
       setPending(false);
     }
@@ -112,11 +114,6 @@ export default function Detail({ kind }) {
             {data.status === 'uncertain' && (
               <p>Проверь платформу перед созданием повторной публикации.</p>
             )}
-            {error && (
-              <p role="alert" className="error">
-                {error}
-              </p>
-            )}
             <div className="actions">
               {!['publishing', 'published', 'uncertain'].includes(data.status) && (
                 <Link className="secondary" to={'/' + kind + '/' + id + '/edit'}>
@@ -124,9 +121,11 @@ export default function Detail({ kind }) {
                 </Link>
               )}
               {data.status !== 'publishing' && (
-                <button className="danger" type="button" disabled={pending} onClick={remove}>
-                  Удалить
-                </button>
+                <DeleteButton
+                  disabled={pending}
+                  onConfirm={remove}
+                  label={'Удалить ' + (data.name || data.youtube_title || 'публикацию')}
+                />
               )}
               {data.status && (
                 <button className="quiet" onClick={() => window.location.reload()}>

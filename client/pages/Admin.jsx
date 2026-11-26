@@ -1,4 +1,5 @@
 import { AdminOverview } from '../components/admin/AdminOverview.jsx';
+import { toast } from '../components/ui/Toast.jsx';
 import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { request } from '../services/api.js';
@@ -28,7 +29,6 @@ export default function Admin() {
   const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
   const [pending, setPending] = useState(false);
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -74,21 +74,19 @@ export default function Admin() {
     setFilter('');
     setPage(1);
     setDetail(null);
-    setNotice('');
     setError('');
   }
   async function mutate(path, method, body, message) {
     setPending(true);
     setError('');
-    setNotice('');
     try {
       await request(path, { method, body });
-      setNotice(message);
+      toast.success(message);
       setRevision((value) => value + 1);
       setDetail(null);
       return true;
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
       return false;
     } finally {
       setPending(false);
@@ -135,11 +133,6 @@ export default function Admin() {
       {error && (
         <p className="inlineError adminFeedback" role="alert">
           {error}
-        </p>
-      )}
-      {notice && (
-        <p className="adminNotice" role="status">
-          {notice}
         </p>
       )}
       {tab === 'overview' && counts && (

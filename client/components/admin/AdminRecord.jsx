@@ -1,4 +1,5 @@
 import React from 'react';
+import { DeleteButton } from '../ui/DeleteButton.jsx';
 import { Status } from '../Common.jsx';
 import { PlatformIcon } from '../PlatformIcon.jsx';
 import { time } from '../../config.js';
@@ -109,20 +110,13 @@ export function AdminRecord({ row, tab, pending, session, mutate, inspect }) {
             </small>
           </div>
           <span className="muted">{fileSize(row.size)}</span>
-          <button
-            className="danger"
+          <DeleteButton
             disabled={pending}
-            onClick={() => {
-              if (
-                window.confirm(
-                  `Удалить файл «${row.name}» из медиатеки ${row.owner}? Копии в публикациях сохранятся.`,
-                )
-              )
-                mutate('admin/media/' + row.id, 'DELETE', undefined, 'Файл удалён из медиатеки');
-            }}
-          >
-            Удалить файл
-          </button>
+            label={`Удалить файл «${row.name}» из медиатеки ${row.owner}. Копии в публикациях сохранятся`}
+            onConfirm={() =>
+              mutate('admin/media/' + row.id, 'DELETE', undefined, 'Файл удалён из медиатеки')
+            }
+          />
         </>
       )}
       {tab === 'events' && (
