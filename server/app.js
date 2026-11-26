@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { fileURLToPath } from 'node:url';
 import { db, transaction } from './db.js';
 import templateRoutes from './routes/templates.js';
+import { runWorker } from './worker.js';
 import { encrypt, ProviderError, verifyChannel } from './providers.js';
 
 const secret = process.env.JWT_SECRET;
@@ -223,4 +224,10 @@ app.use((err, req, res, next) => {
   if (status === 500) console.error('Ошибка API', err.code || err.name);
   res.status(status).json({ error: status === 500 ? 'Ошибка сервера' : err.message });
 });
-app.listen(process.env.PORT || 3000, () => console.log('API запущен'));
+const server = app.listen(process.env.PORT || 3000, () => console.log('API запущен'));
+const queueController = new AbortController();
+const queue = process.env.EMBEDDED_WORKER === '0' ? Promise.resolve() : runWorker({ signal:queueController.signal });
+for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => {
+  queueController.abort();
+  server.close(async () => { await queue; await db.end(); });
+});

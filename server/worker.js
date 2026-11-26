@@ -1,9 +1,7 @@
+import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import { db, transaction } from './db.js';
 import { publish, ProviderError } from './providers.js';
-
-let running = true;
-for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => { running = false; });
 
 async function claim() {
   return transaction(async client => {
@@ -37,15 +35,27 @@ async function processPost(post) {
     await client.query('UPDATE deliveries SET completed_at=now(),external_id=$1,error=$2 WHERE id=$3', [externalId, message, post.attemptId]);
     await client.query("UPDATE posts SET status=$1,updated_at=now() WHERE id=$2 AND status='publishing'", [status, post.id]);
   });
+  console.log(JSON.stringify({ postId:post.id, status, externalId }));
 }
 
-try {
-  do {
-    const post = await claim();
-    if (post) await processPost(post);
-    else if (process.argv.includes('--once')) break;
-    else if (running) await delay(5000);
-  } while (running);
-} finally {
-  await db.end();
+export async function runWorker({ once = false, signal } = {}) {
+  while (!signal?.aborted) {
+    try {
+      const post = await claim();
+      if (post) { await processPost(post); continue; }
+      if (once) return;
+    } catch (error) {
+      if (once) throw error;
+      console.error('Ошибка обработки очереди', error.code || error.name);
+    }
+    try { await delay(5000, undefined, { signal }); }
+    catch (error) { if (error.name !== 'AbortError') throw error; }
+  }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const controller = new AbortController();
+  for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => controller.abort());
+  try { await runWorker({ once:process.argv.includes('--once'), signal:controller.signal }); }
+  finally { await db.end(); }
 }
